@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>世界地图拼图 - 认识世界</title>
+    <title>世界地图拼图 - 认识世界</title>\n    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n    <meta http-equiv="Pragma" content="no-cache">\n    <meta http-equiv="Expires" content="0">
     <link rel="preconnect" href="https://fonts.loli.net">
     <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
     <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -685,7 +685,7 @@
 
         // ============ 加载地图 ============
         async function loadMap() {
-            const response = await fetch('world-map.svg');
+            const response = await fetch('world-map.svg?v=2');
             const svgText = await response.text();
             document.getElementById('mapContainer').innerHTML = svgText;
             svgDoc = document.querySelector('#mapContainer svg');
