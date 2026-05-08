@@ -524,7 +524,7 @@
         </div>
         <div class="stats-area">
             <div class="stat-box">⏱️ <span id="timerText">0:00</span></div>
-            <div class="stat-box progress">🧩 <span id="progressText">0/34</span></div>
+            <div class="stat-box progress">🧩 <span id="progressText">0/33</span></div>
         </div>
     </header>
 
@@ -645,7 +645,7 @@
 
         // 拼图块尺寸配置
         const PIECE_MAX_SIZE = 70; // 最大尺寸
-        const MAP_LABEL_SCALE = 0.33;
+        const MAP_LABEL_SCALE = 0.55;
         const LABEL_LAYOUT_OVERRIDES = {
             beijing: { nameSize: 10, capitalSize: 8 },
             tianjin: { nameSize: 9, capitalSize: 7.5 },
@@ -698,7 +698,7 @@
             puzzleScroll.innerHTML = '';
 
             // 获取所有国家元素
-            const stateElements = svgDoc.querySelectorAll('.country');
+            const stateElements = svgDoc.querySelectorAll('.state');
 
             stateElements.forEach(el => {
                 const stateClass = el.getAttribute('id');
@@ -848,21 +848,21 @@
             currentDragging = {
                 key: key,
                 piece: piece,
-                country: countryItem
+                country: country
             };
 
             piece.classList.add('dragging');
 
             // 创建幽灵元素（复制拼图块）
             dragGhost.innerHTML = piece.innerHTML;
-            dragGhost.style.width = countryItem.pieceWidth + 'px';
-            dragGhost.style.height = countryItem.pieceHeight + 'px';
+            dragGhost.style.width = country.pieceWidth + 'px';
+            dragGhost.style.height = country.pieceHeight + 'px';
             dragGhost.style.display = 'block';
 
             updateGhostPosition(e.clientX, e.clientY);
 
             // 高亮目标
-            countryItem.targetElement.classList.add('highlight');
+            country.targetElement.classList.add('highlight');
         }
 
         function handleDragMove(e) {
@@ -911,7 +911,7 @@
                 svgPoint.y <= bbox.y + bbox.height + margin;
 
             if (isInside) {
-                placeProvince(key);
+                placeCountry(key);
             }
 
             currentDragging = null;
@@ -1030,7 +1030,7 @@
             const bbox = country.bbox;
             const info = country.info;
             const layout = getCountryLabelLayout(key, country);
-            const nameFontSize = layout.nameSize ?? getProvinceNameFontSize(bbox);
+            const nameFontSize = layout.nameSize ?? getCountryNameFontSize(bbox);
             const capitalFontSize = layout.capitalSize ?? Math.max(2.4, nameFontSize * 0.72);
             const centerX = layout.x;
             const centerY = layout.y;
@@ -1070,7 +1070,7 @@
         function getCountryLabelLayout(key, country) {
             const bbox = country.bbox;
             const compact = bbox.width < 26 || bbox.height < 22;
-            const baseNameSize = compact ? 8.5 : getProvinceNameFontSize(bbox);
+            const baseNameSize = compact ? 8.5 : getCountryNameFontSize(bbox);
             const baseCapitalSize = compact ? 7 : Math.max(7, Math.min(12, baseNameSize - 1.5));
             const rawLayout = {
                 nameSize: baseNameSize,
@@ -1166,7 +1166,7 @@
         }
 
         function updateProgress() {
-            document.getElementById('progressText').textContent = `${placedCount}/34`;
+            document.getElementById('progressText').textContent = `${placedCount}/33`;
         }
 
         function startTimer() {
