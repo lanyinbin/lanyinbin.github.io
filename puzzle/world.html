@@ -558,7 +558,7 @@
             <div class="province-header">
                 <div class="province-icon" id="provinceIcon">🏛️</div>
                 <h2 id="provinceName">北京</h2>
-                <span class="province-type" id="provinceType">国家</span>
+                <span class="province-type" id="provinceType">直辖市</span>
             </div>
             <div class="detail-item">
                 <span class="detail-emoji">📍</span>
@@ -656,12 +656,6 @@
             hainan: { nameSize: 10, capitalSize: 8 }
         };
 
-        function getUniqueCountryCount() {
-            const uniqueNames = new Set();
-            Object.values(countries).forEach(c => uniqueNames.add(c.info.name));
-            return uniqueNames.size;
-        }
-
         // ============ 初始化 ============
         async function init() {
             generateStars();
@@ -695,7 +689,7 @@
             const svgText = await response.text();
             document.getElementById('mapContainer').innerHTML = svgText;
             svgDoc = document.querySelector('#mapContainer svg');
-            svgDoc.setAttribute('viewBox', '0 0 595.28 504');
+            svgDoc.setAttribute('viewBox', '0 0 950 620');
         }
 
         // ============ 设置游戏 ============
@@ -707,7 +701,6 @@
             const stateElements = svgDoc.querySelectorAll('.country');
 
             stateElements.forEach(el => {
-                const classes = el.getAttribute('id');
                 const stateClass = el.getAttribute('id');
                 if (!stateClass) return;
 
@@ -738,19 +731,19 @@
             shuffleArray(countryKeys);
 
             countryKeys.forEach(key => {
-                const province = countries[key];
-                const piece = createPuzzlePiece(key, country);
+                const countryItem = countries[key];
+                const piece = createPuzzlePiece(key, countryItem);
                 puzzleScroll.appendChild(piece);
                 countries[key].pieceElement = piece;
             });
 
-            renderProvinceLabels();
+            renderCountryLabels();
         }
 
         // ============ 创建拼图块（真实国家形状）============
-        function createPuzzlePiece(key, country) {
-            const info = country.info;
-            const bbox = country.bbox;
+        function createPuzzlePiece(key, countryItem) {
+            const info = countryItem.info;
+            const bbox = countryItem.bbox;
 
             // 计算缩放比例，使拼图块适应指定大小
             const scale = Math.min(PIECE_MAX_SIZE / bbox.width, PIECE_MAX_SIZE / bbox.height);
@@ -772,12 +765,12 @@
 
             // 复制国家形状
             let shape;
-            if (country.tagName === 'path') {
+            if (countryItem.tagName === 'path') {
                 shape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                shape.setAttribute('d', country.pathData);
+                shape.setAttribute('d', countryItem.pathData);
             } else {
                 shape = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                shape.setAttribute('points', country.points);
+                shape.setAttribute('points', countryItem.points);
             }
             shape.classList.add('country-shape');
             shape.setAttribute('fill', info.color);
@@ -795,9 +788,9 @@
             piece.appendChild(label);
 
             // 存储缩放信息
-            country.scale = scale;
-            country.pieceWidth = width;
-            country.pieceHeight = height;
+            countryItem.scale = scale;
+            countryItem.pieceWidth = width;
+            countryItem.pieceHeight = height;
 
             return piece;
         }
@@ -850,26 +843,26 @@
 
             e.preventDefault();
             const key = piece.getAttribute('data-country');
-            const province = countries[key];
+            const country = countries[key];
 
             currentDragging = {
                 key: key,
                 piece: piece,
-                province: province
+                country: countryItem
             };
 
             piece.classList.add('dragging');
 
             // 创建幽灵元素（复制拼图块）
             dragGhost.innerHTML = piece.innerHTML;
-            dragGhost.style.width = country.pieceWidth + 'px';
-            dragGhost.style.height = country.pieceHeight + 'px';
+            dragGhost.style.width = countryItem.pieceWidth + 'px';
+            dragGhost.style.height = countryItem.pieceHeight + 'px';
             dragGhost.style.display = 'block';
 
             updateGhostPosition(e.clientX, e.clientY);
 
             // 高亮目标
-            country.targetElement.classList.add('highlight');
+            countryItem.targetElement.classList.add('highlight');
         }
 
         function handleDragMove(e) {
@@ -918,7 +911,7 @@
                 svgPoint.y <= bbox.y + bbox.height + margin;
 
             if (isInside) {
-                placeCountry(key);
+                placeProvince(key);
             }
 
             currentDragging = null;
@@ -987,7 +980,7 @@
         }
 
         function placeCountry(key) {
-            const province = countries[key];
+            const country = countries[key];
 
             // 隐藏拼图块
             country.pieceElement.classList.add('placed');
@@ -1003,12 +996,12 @@
             // 点击查看详情 + 播放语音
             country.targetElement.onclick = () => {
                 showCountryInfo(country.info);
-                const text = getProvinceSpeechText(country.info);
+                const text = getCountrySpeechText(country.info);
                 playCountryAudio(key, text);
             };
 
             country.placed = true;
-            updateProvinceLabelAppearance(province);
+            updateCountryLabelAppearance(country);
             placedCount++;
             updateProgress();
             showToast(`✅ ${country.info.name} 放对了，${country.info.capital.label}是${country.info.capital.name}`);
@@ -1016,7 +1009,7 @@
 
             // 播放国家介绍语音
             const info = country.info;
-            const fallbackText = getProvinceSpeechText(info);
+            const fallbackText = getCountrySpeechText(info);
             playCountryAudio(key, fallbackText);
 
             if (placedCount >= Object.keys(countries).length) {
@@ -1025,18 +1018,18 @@
         }
 
         function renderCountryLabels() {
-            Object.entries(countries).forEach(([key, province]) => {
+            Object.entries(countries).forEach(([key, country]) => {
                 if (!country.labelElement) {
-                    country.labelElement = createProvinceLabel(key, province);
+                    country.labelElement = createCountryLabel(key, country);
                 }
-                updateProvinceLabelAppearance(province);
+                updateCountryLabelAppearance(country);
             });
         }
 
-        function createCountryLabel(key, province) {
+        function createCountryLabel(key, country) {
             const bbox = country.bbox;
             const info = country.info;
-            const layout = getProvinceLabelLayout(key, province);
+            const layout = getCountryLabelLayout(key, country);
             const nameFontSize = layout.nameSize ?? getProvinceNameFontSize(bbox);
             const capitalFontSize = layout.capitalSize ?? Math.max(2.4, nameFontSize * 0.72);
             const centerX = layout.x;
@@ -1068,13 +1061,13 @@
             return group;
         }
 
-        function updateCountryLabelAppearance(province) {
+        function updateCountryLabelAppearance(country) {
             if (!country.labelElement) return;
             country.labelElement.classList.toggle('placed', country.placed);
             country.labelElement.classList.toggle('unplaced', !country.placed);
         }
 
-        function getCountryLabelLayout(key, province) {
+        function getCountryLabelLayout(key, country) {
             const bbox = country.bbox;
             const compact = bbox.width < 26 || bbox.height < 22;
             const baseNameSize = compact ? 8.5 : getProvinceNameFontSize(bbox);
@@ -1092,7 +1085,7 @@
             const capitalDy = rawLayout.capitalDy !== undefined
                 ? rawLayout.capitalDy * MAP_LABEL_SCALE
                 : Math.max(2.2, capitalSize * 0.82);
-            const anchor = findProvinceLabelAnchor(province, nameDy, capitalDy);
+            const anchor = findCountryLabelAnchor(country, nameDy, capitalDy);
             return {
                 ...rawLayout,
                 x: rawLayout.x ?? anchor.x,
@@ -1104,7 +1097,7 @@
             };
         }
 
-        function findCountryLabelAnchor(province, nameDy, capitalDy) {
+        function findCountryLabelAnchor(country, nameDy, capitalDy) {
             if (country.labelAnchor) return country.labelAnchor;
 
             const bbox = country.bbox;
@@ -1173,7 +1166,7 @@
         }
 
         function updateProgress() {
-            document.getElementById('progressText').textContent = `${placedCount}/${Object.keys(countries).length}`;
+            document.getElementById('progressText').textContent = `${placedCount}/34`;
         }
 
         function startTimer() {
@@ -1187,7 +1180,7 @@
 
         function resetGame() {
             Object.keys(countries).forEach(key => {
-                const province = countries[key];
+                const country = countries[key];
                 country.placed = false;
                 country.pieceElement.classList.remove('placed');
                 country.targetElement.classList.add('target');
@@ -1197,7 +1190,7 @@
                 country.targetElement.style.fill = '';
                 country.targetElement.style.stroke = '';
                 country.targetElement.onclick = null;
-                updateProvinceLabelAppearance(province);
+                updateCountryLabelAppearance(country);
             });
 
             // 重新打乱
@@ -1215,7 +1208,7 @@
             const unplaced = Object.entries(countries).filter(([k, p]) => !p.placed);
             if (unplaced.length === 0) return;
 
-            const [key, province] = unplaced[Math.floor(Math.random() * unplaced.length)];
+            const [key, country] = unplaced[Math.floor(Math.random() * unplaced.length)];
             country.targetElement.classList.add('highlight');
             country.pieceElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             country.pieceElement.style.animation = 'pulse 0.4s ease 3';
