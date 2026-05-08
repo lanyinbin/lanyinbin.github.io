@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太空赛跑 - 谁能最快到达太阳？</title>
+    <link rel="preconnect" href="https://fonts.loli.net">
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a2a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .star { position: absolute; border-radius: 50%; background: #fff; animation: twinkle 3s infinite alternate; }
+        @keyframes twinkle { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .container {
+            position: relative; z-index: 1;
+            max-width: 820px; margin: 0 auto;
+            padding: 20px 16px 60px;
+        }
+
+        /* ============ Header ============ */
+        .header { text-align: center; margin-bottom: 20px; position: relative; }
+        .back-btn {
+            position: absolute; left: 0; top: 4px;
+            color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        .back-btn:hover { color: #fff; }
+        .header h1 {
+            font-size: 1.8rem; font-weight: 900;
+            background: linear-gradient(135deg, #ff9800, #ffd54f);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .subtitle { color: rgba(255,255,255,0.5); font-size: 0.95rem; margin-top: 4px; }
+
+        /* ============ Tab Buttons ============ */
+        .target-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; justify-content: flex-start; }
+        .tab-btn {
+            padding: 8px 18px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.6); font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; transition: all 0.3s; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.1); }
+        .tab-btn.active { background: rgba(255,152,0,0.2); border-color: #ff9800; color: #ff9800; }
+
+        /* ============ 3D Scene ============ */
+        .scene-wrap {
+            position: relative; width: 100%; height: 240px;
+            border-radius: 14px; overflow: hidden; margin: 20px 0;
+            background: radial-gradient(ellipse at 70% 50%, rgba(40,25,10,0.4) 0%, transparent 60%),
+                        linear-gradient(135deg, #05051a 0%, #0a0a2a 100%);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        #scene3d { width: 100%; height: 100%; cursor: grab; }
+        #scene3d:active { cursor: grabbing; }
+        #scene3d canvas { display: block; width: 100%; height: 100%; }
+        .scene-hint {
+            position: absolute; bottom: 8px; right: 12px;
+            font-size: 0.65rem; color: rgba(255,255,255,0.25);
+            pointer-events: none; transition: opacity 0.5s;
+        }
+        .scene-hint.hidden { opacity: 0; }
+
+        /* ============ Intro ============ */
+        .intro {
+            text-align: center; font-size: 0.9rem; color: rgba(255,255,255,0.6);
+            margin-bottom: 20px; line-height: 1.7;
+        }
+
+        /* ============ Tracks ============ */
+        .tracks { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+        .track {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 10px 14px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .track:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.15); }
+        .track.arrived { border-color: #ffd54f; box-shadow: 0 0 12px rgba(255,213,77,0.2); }
+
+        .track-main { display: flex; align-items: center; gap: 10px; }
+        .track-info { display: flex; align-items: center; gap: 8px; min-width: 110px; flex-shrink: 0; }
+        .track-icon { font-size: 1.4rem; width: 28px; text-align: center; }
+        .track-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
+        .track-speed { font-size: 0.7rem; color: rgba(255,255,255,0.35); }
+
+        .track-bar-wrap {
+            flex: 1; height: 22px; min-width: 80px;
+            background: rgba(255,255,255,0.06); border-radius: 11px;
+            position: relative; overflow: hidden;
+        }
+        .track-bar-fill {
+            height: 100%; width: 0%; border-radius: 11px;
+            position: relative; min-width: 0;
+        }
+        .track-bar-fill.animate { transition: width 0.15s linear; }
+
+        .track-status { min-width: 90px; text-align: right; font-size: 0.82rem; color: rgba(255,255,255,0.6); flex-shrink: 0; }
+        .track-status.done { color: #ffd54f; font-weight: 700; }
+
+        /* ============ Arrival Banner ============ */
+        .arrival-banner {
+            max-height: 0; overflow: hidden; opacity: 0;
+            transition: max-height 0.4s ease, opacity 0.4s ease, margin 0.3s ease;
+            font-size: 0.85rem; color: #ffd54f; padding-left: 46px;
+        }
+        .arrival-banner.show { max-height: 40px; opacity: 1; margin-top: 6px; }
+
+        /* ============ Journey Card ============ */
+        .journey-card {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.5s ease, margin 0.3s ease;
+        }
+        .journey-card.expanded { max-height: 500px; margin-top: 10px; }
+
+        .journey-inner {
+            background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px 16px;
+        }
+        .journey-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; }
+
+        .milestone {
+            display: flex; gap: 10px; padding: 7px 0 7px 14px;
+            border-left: 2px solid var(--tc); margin-left: 5px; position: relative;
+        }
+        .milestone::before {
+            content: ''; position: absolute; left: -6px; top: 11px;
+            width: 10px; height: 10px; border-radius: 50%; background: var(--tc);
+        }
+        .milestone:last-of-type { border-left-color: transparent; }
+        .milestone-time { font-weight: 700; min-width: 85px; font-size: 0.85rem; flex-shrink: 0; }
+        .milestone-body { flex: 1; }
+        .milestone-label { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
+        .milestone-fun { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+
+        .journey-fact {
+            margin-top: 10px; padding: 8px 12px;
+            background: rgba(255,215,77,0.08); border-radius: 8px;
+            font-size: 0.85rem; color: #ffd54f;
+        }
+
+        /* ============ Controls ============ */
+        .controls {
+            background: rgba(255,255,255,0.04); border-radius: 12px;
+            padding: 14px 16px; margin-bottom: 18px;
+        }
+        .timer-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+        .timer-label { color: rgba(255,255,255,0.5); font-size: 0.9rem; }
+        .timer-value { font-size: 1.15rem; font-weight: 700; color: #ffd54f; min-width: 100px; }
+
+        .speed-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .speed-label { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+        .speed-btn {
+            padding: 5px 12px; border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.7); font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+            font-family: inherit;
+        }
+        .speed-btn:hover { background: rgba(255,255,255,0.1); }
+        .speed-btn.active { background: rgba(255,152,0,0.2); border-color: #ff9800; color: #ff9800; }
+        .speed-hint { width: 100%; text-align: center; font-size: 0.75rem; color: rgba(255,255,255,0.3); margin-top: 6px; }
+
+        /* ============ Action Buttons ============ */
+        .action-area { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; }
+        .btn-primary {
+            padding: 12px 36px; font-size: 1.2rem; font-weight: 700;
+            border: none; border-radius: 28px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #fff; cursor: pointer; transition: all 0.3s; font-family: inherit;
+        }
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(255,152,0,0.3); }
+        .btn-secondary {
+            padding: 10px 22px; font-size: 0.95rem; font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 22px;
+            background: rgba(255,255,255,0.06); color: #fff;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255,152,0,0.4); }
+            70% { box-shadow: 0 0 0 14px rgba(255,152,0,0); }
+            100% { box-shadow: 0 0 0 0 rgba(255,152,0,0); }
+        }
+        .pulse { animation: pulse 2s infinite; }
+
+        /* ============ Finish ============ */
+        .finish { display: none; text-align: center; padding: 20px; background: rgba(255,215,77,0.08); border: 1px solid rgba(255,215,77,0.2); border-radius: 14px; margin-top: 10px; }
+        .finish.show { display: block; }
+        .finish-title { font-size: 1.3rem; font-weight: 900; margin-bottom: 8px; }
+        .finish-ranks { text-align: left; display: inline-block; font-size: 0.9rem; line-height: 1.8; }
+        .finish-footer { margin-top: 12px; font-size: 0.85rem; color: rgba(255,255,255,0.6); }
+
+        /* ============ Responsive ============ */
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.4rem; }
+            .scene-wrap { height: 180px; }
+            .track-info { min-width: 90px; }
+            .track-bar-wrap { height: 18px; }
+            .track-status { min-width: 70px; font-size: 0.78rem; }
+            .speed-btn { padding: 4px 10px; font-size: 0.78rem; }
+            .btn-primary { padding: 10px 28px; font-size: 1.1rem; }
+            .milestone-time { min-width: 70px; font-size: 0.8rem; }
+            .arrival-banner { padding-left: 38px; font-size: 0.8rem; }
+            .tab-btn { padding: 6px 14px; font-size: 0.82rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    <div class="container">
+        <header class="header">
+            <a href="../index.html" class="back-btn">← 返回乐园</a>
+            <h1>☀️ 太空赛跑</h1>
+            <p class="subtitle" id="subtitleText">谁能最快到达太阳？</p>
+        </header>
+
+        <div class="target-tabs">
+            <button class="tab-btn" data-target="mercury" onclick="switchTarget('mercury')">☿ 水星</button>
+            <button class="tab-btn" data-target="venus" onclick="switchTarget('venus')">♀ 金星</button>
+            <button class="tab-btn active" data-target="earth" onclick="switchTarget('earth')">🌍 地球</button>
+            <button class="tab-btn" data-target="mars" onclick="switchTarget('mars')">🔴 火星</button>
+            <button class="tab-btn" data-target="jupiter" onclick="switchTarget('jupiter')">🟤 木星</button>
+            <button class="tab-btn" data-target="saturn" onclick="switchTarget('saturn')">🪐 土星</button>
+            <button class="tab-btn" data-target="uranus" onclick="switchTarget('uranus')">🔵 天王星</button>
+            <button class="tab-btn" data-target="neptune" onclick="switchTarget('neptune')">🌊 海王星</button>
+            <button class="tab-btn" data-target="pluto" onclick="switchTarget('pluto')">⚪ 冥王星</button>
+        </div>
+
+        <div class="scene-wrap">
+            <div id="scene3d"></div>
+            <div class="scene-hint" id="sceneHint">🖱️ 拖动旋转</div>
+        </div>
+
+        <p class="intro" id="introText">地球到太阳有 1 亿 5 千万公里远！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！</p>
+
+        <div id="exploreLink" style="text-align:center; margin-bottom:18px;">
+            <a href="sun-distance-explore.html" target="_blank" style="
+                display:inline-block; padding:10px 24px; border-radius:24px;
+                background:linear-gradient(135deg, #1a237e, #0d47a1, #01579b);
+                color:#fff; text-decoration:none; font-size:0.95rem; font-weight:700;
+                border:1px solid rgba(100,180,255,0.3);
+                box-shadow:0 4px 15px rgba(30,90,200,0.3);
+                transition:all 0.3s;
+            " onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(30,90,200,0.5)'"
+               onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 15px rgba(30,90,200,0.3)'">
+                🔭 探索地日距离 3D 之旅
+            </a>
+        </div>
+
+        <div id="tracks" class="tracks"></div>
+
+        <div class="controls" id="controls">
+            <div class="timer-row">
+                <span class="timer-label">⏱️ 已过去</span>
+                <span class="timer-value" id="timer">0 秒</span>
+            </div>
+            <div class="speed-row">
+                <span class="speed-label">倍率</span>
+                <button class="speed-btn" data-speed="10000">1万x</button>
+                <button class="speed-btn" data-speed="1000000">100万x</button>
+                <button class="speed-btn active" data-speed="100000000">1亿x</button>
+                <button class="speed-btn" data-speed="1000000000">10亿x</button>
+                <button class="speed-btn" data-speed="10000000000">100亿x</button>
+                <div class="speed-hint" id="speedHint">1秒 ≈ 3.2年，适合观看飞机、高铁、汽车</div>
+            </div>
+        </div>
+
+        <div class="action-area" id="actionArea">
+            <button class="btn-primary pulse" id="startBtn">🏁 出发！</button>
+        </div>
+
+        <div class="finish" id="finish">
+            <div class="finish-title">🎉 比赛结束！</div>
+            <div class="finish-ranks" id="finishRanks"></div>
+            <div class="finish-footer" id="finishFooter"></div>
+        </div>
+    </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// ============ 3D 太阳系全景场景 ============
+(function() {
+    const container = document.getElementById('scene3d');
+    if (!container) return;
+
+    const AU = 8; // 1 AU = 8 场景单位
+    const SUN_R = 2.5;
+    const PLANETS = [
+        { name: '水星', au: 0.39, r: 0.25, tex: 'textures/mercury.jpg' },
+        { name: '金星', au: 0.72, r: 0.45, tex: 'textures/venus_atmosphere.jpg' },
+        { name: '地球', au: 1.0, r: 0.5, tex: 'textures/earth_daymap.jpg', isEarth: true },
+        { name: '火星', au: 1.52, r: 0.3, tex: 'textures/mars.jpg' },
+        { name: '木星', au: 5.2, r: 1.5, tex: 'textures/jupiter.jpg' },
+        { name: '土星', au: 9.54, r: 1.2, tex: 'textures/saturn.jpg', hasRing: true },
+        { name: '天王星', au: 19.19, r: 0.8, tex: 'textures/uranus.jpg' },
+        { name: '海王星', au: 30.07, r: 0.7, tex: 'textures/neptune.jpg' },
+        { name: '冥王星', au: 39.48, r: 0.2, tex: 'textures/pluto.jpg' },
+    ];
+    const VIEWS = {
+        mercury:{ pos: [1.5, 3, 12],   look: [1.5, 0, 0],  minD: 8,  maxD: 40 },
+        venus:  { pos: [3, 4, 18],     look: [3, 0, 0],     minD: 10, maxD: 50 },
+        earth:  { pos: [4, 5, 25],     look: [4, 0, 0],     minD: 12, maxD: 80 },
+        mars:   { pos: [6, 5, 28],     look: [6, 0, 0],     minD: 12, maxD: 80 },
+        jupiter:{ pos: [20, 8, 60],    look: [20, 0, 0],    minD: 25, maxD: 120 },
+        saturn: { pos: [38, 10, 100],  look: [38, 0, 0],    minD: 30, maxD: 200 },
+        uranus: { pos: [60, 12, 140],  look: [60, 0, 0],    minD: 40, maxD: 400 },
+        neptune:{ pos: [120, 15, 250], look: [120, 0, 0],   minD: 60, maxD: 500 },
+        pluto:  { pos: [158, 18, 320], look: [158, 0, 0],   minD: 80, maxD: 600 },
+    };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.set(4, 5, 25);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(4, 0, 0);
+    controls.enablePan = false; controls.enableZoom = true;
+    controls.minDistance = 12; controls.maxDistance = 80;
+    controls.maxPolarAngle = Math.PI * 0.85; controls.minPolarAngle = Math.PI * 0.15;
+    controls.enableDamping = true; controls.dampingFactor = 0.08; controls.rotateSpeed = 0.5;
+
+    let hintHidden = false;
+    controls.addEventListener('start', () => {
+        if (!hintHidden) {
+            const h = document.getElementById('sceneHint');
+            if (h) h.classList.add('hidden');
+            hintHidden = true;
+        }
+    });
+
+    scene.add(new THREE.AmbientLight(0x334466, 0.6));
+    const textureLoader = new THREE.TextureLoader();
+
+    // ============ 太阳 ============
+    const sunMat = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: `varying vec3 vNormal; varying vec2 vUv;
+            void main(){ vNormal=normalize(normalMatrix*normal); vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+        fragmentShader: `uniform float time; varying vec3 vNormal; varying vec2 vUv;
+            float noise(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+            float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*noise(p);p*=2.;a*=.5;}return v;}
+            void main(){float n=fbm(vUv*10.+time*.1);float n2=fbm(vUv*20.-time*.15);
+            vec3 c=mix(mix(vec3(1,.95,.5),vec3(1,.7,.2),n),vec3(1,.5,.1),n2*.3);
+            c+=vec3(1,.6,.2)*pow(1.-dot(vNormal,vec3(0,0,1)),2.)*.5;gl_FragColor=vec4(c,1.);}`
+    });
+    const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(SUN_R, 64, 64), sunMat);
+    sunMesh.position.set(0, 0, 0);
+    scene.add(sunMesh);
+
+    const coronaMat = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: `varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+        fragmentShader: `uniform float time;varying vec3 vN;void main(){float i=pow(.6-dot(vN,vec3(0,0,1)),2.);gl_FragColor=vec4(vec3(1,.7,.2)*i*(sin(time*2.)*.1+.9),i*.6);}`,
+        transparent: true, blending: THREE.AdditiveBlending, side: THREE.BackSide
+    });
+    sunMesh.add(new THREE.Mesh(new THREE.SphereGeometry(SUN_R*1.25,32,32), coronaMat));
+    const outerGlowMat = new THREE.ShaderMaterial({
+        vertexShader: `varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+        fragmentShader: `varying vec3 vN;void main(){float i=pow(.4-dot(vN,vec3(0,0,1)),3.);gl_FragColor=vec4(vec3(1,.5,.1)*i,i*.3);}`,
+        transparent: true, blending: THREE.AdditiveBlending, side: THREE.BackSide
+    });
+    sunMesh.add(new THREE.Mesh(new THREE.SphereGeometry(SUN_R*1.75,32,32), outerGlowMat));
+    sunMesh.add(new THREE.PointLight(0xffdd88, 2, 500));
+
+    // ============ 行星 ============
+    const planetMeshes = [];
+    let cloudMesh;
+
+    function makeTextSprite(text, fontSize, color) {
+        const c = document.createElement('canvas'), ctx = c.getContext('2d');
+        c.width = 512; c.height = 128;
+        ctx.font = `bold ${fontSize}px "Noto Sans SC",sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = color; ctx.fillText(text, 256, 64);
+        const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+        const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+        s.scale.set(20, 5, 1);
+        return s;
+    }
+
+    PLANETS.forEach(p => {
+        const x = p.au * AU;
+        const geo = new THREE.SphereGeometry(p.r, 32, 32);
+        let mesh;
+
+        if (p.isEarth) {
+            const eMat = new THREE.ShaderMaterial({
+                uniforms: { dayTexture: { value: textureLoader.load(p.tex) }, sunDirection: { value: new THREE.Vector3(-1,0,0) } },
+                vertexShader: `uniform vec3 sunDirection;varying vec3 vNormal,vViewDir,vSunDir;varying vec2 vUv;
+                    void main(){vNormal=normalize(normalMatrix*normal);vUv=uv;vec4 mv=modelViewMatrix*vec4(position,1.);
+                    vViewDir=normalize(-mv.xyz);vSunDir=normalize(mat3(viewMatrix)*sunDirection);gl_Position=projectionMatrix*mv;}`,
+                fragmentShader: `uniform sampler2D dayTexture;varying vec3 vNormal,vViewDir,vSunDir;varying vec2 vUv;
+                    void main(){vec3 sc=texture2D(dayTexture,vUv).rgb*1.15;sc*=max(dot(vNormal,vSunDir),0.)*.55+.45;
+                    float f=pow(1.-max(dot(vNormal,vViewDir),0.),4.);gl_FragColor=vec4(mix(sc,vec3(.3,.6,1.),f*.15),1.);}`
+            });
+            mesh = new THREE.Mesh(geo, eMat);
+            const cMat = new THREE.MeshPhongMaterial({ map: textureLoader.load('textures/earth_clouds.jpg'), transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide });
+            cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(p.r*1.015, 32, 32), cMat);
+            mesh.add(cloudMesh);
+            const atmo = new THREE.ShaderMaterial({
+                vertexShader: `varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+                fragmentShader: `varying vec3 vN;void main(){float i=pow(.55-dot(vN,vec3(0,0,1)),3.);gl_FragColor=vec4(vec3(.3,.6,1.),i*.4);}`,
+                transparent: true, blending: THREE.AdditiveBlending, side: THREE.BackSide, depthWrite: false
+            });
+            mesh.add(new THREE.Mesh(new THREE.SphereGeometry(p.r*1.1,32,32), atmo));
+        } else {
+            mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ map: textureLoader.load(p.tex), shininess: 10 }));
+        }
+
+        mesh.position.set(x, 0, 0);
+        scene.add(mesh);
+        planetMeshes.push(mesh);
+
+        // 土星环
+        if (p.hasRing) {
+            const rGeo = new THREE.RingGeometry(p.r*1.4, p.r*2.3, 64);
+            const pos = rGeo.attributes.position, uv = rGeo.attributes.uv;
+            for (let i = 0; i < pos.count; i++) {
+                const d = Math.sqrt(pos.getX(i)**2 + pos.getY(i)**2);
+                uv.setXY(i, (d - p.r*1.4)/(p.r*0.9), 0.5);
+            }
+            const ring = new THREE.Mesh(rGeo, new THREE.MeshBasicMaterial({
+                map: textureLoader.load('textures/saturn_ring.png'), side: THREE.DoubleSide, transparent: true, opacity: 0.7
+            }));
+            ring.rotation.x = Math.PI * 0.45;
+            mesh.add(ring);
+        }
+
+        // 行星标签
+        const lbl = makeTextSprite(p.name, 56, 'rgba(255,255,255,0.8)');
+        lbl.position.set(x, -p.r - 2, 0); lbl.scale.set(8, 2, 1);
+        scene.add(lbl);
+    });
+
+    // 太阳标签
+    const sl = makeTextSprite('太阳', 70, 'rgba(255,210,80,1)');
+    sl.position.set(0, -SUN_R - 3, 0); sl.scale.set(10, 2.5, 1);
+    scene.add(sl);
+
+    // ============ 距离线（所有行星） ============
+    function makeDash(x1, x2, color, opacity) {
+        const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1,0,0), new THREE.Vector3(x2,0,0)]);
+        const m = new THREE.LineDashedMaterial({ color, opacity, transparent: true, dashSize: 1.2, gapSize: 0.8 });
+        const l = new THREE.Line(g, m); l.computeLineDistances();
+        return l;
+    }
+
+    const DIST_CFG = [
+        { key:'mercury', x:0.39*AU, r:0.25, color:'#a0a0a0', lbl:'5,850万公里（0.39 AU）', ls:[14,3.5] },
+        { key:'venus',   x:0.72*AU, r:0.45, color:'#e8c56d', lbl:'1.08亿公里（0.72 AU）', ls:[14,3.5] },
+        { key:'earth',   x:1.0*AU,  r:0.5,  color:'#ffd54f', lbl:'1.5亿公里（1 AU）', ls:[16,4] },
+        { key:'mars',    x:1.52*AU, r:0.3,  color:'#ff6b35', lbl:'2.28亿公里（1.52 AU）', ls:[16,4] },
+        { key:'jupiter', x:5.2*AU,  r:1.5,  color:'#c88b3a', lbl:'7.8亿公里（5.2 AU）', ls:[18,4.5] },
+        { key:'saturn',  x:9.54*AU, r:1.2,  color:'#e0c882', lbl:'14.3亿公里（9.54 AU）', ls:[18,4.5] },
+        { key:'uranus',  x:19.19*AU,r:0.8,  color:'#73c5d0', lbl:'28.7亿公里（19.19 AU）', ls:[20,5] },
+        { key:'neptune', x:30.07*AU,r:0.7,  color:'#3f54ba', lbl:'45.1亿公里（30.07 AU）', ls:[20,5] },
+        { key:'pluto',   x:39.48*AU,r:0.2,  color:'#b8a9c9', lbl:'59.2亿公里（39.48 AU）', ls:[20,5] },
+    ];
+    const distObjs = {};
+    DIST_CFG.forEach(c => {
+        const line = makeDash(SUN_R+0.3, c.x-c.r-0.3, c.color, 0.35);
+        line.visible = (c.key === 'earth');
+        scene.add(line);
+        const dl = makeTextSprite(c.lbl, 44, c.color);
+        dl.position.set(c.x/2, c.x > 50 ? 3.5 : 2.5, 0);
+        dl.scale.set(c.ls[0], c.ls[1], 1);
+        dl.visible = (c.key === 'earth');
+        scene.add(dl);
+        distObjs[c.key] = { line, label: dl };
+    });
+
+    // ============ 星空粒子 ============
+    const N = 2000, sP = new Float32Array(N*3), sC = new Float32Array(N*3), sS = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+        const i3=i*3, r=300+Math.random()*300, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+        sP[i3]=r*Math.sin(ph)*Math.cos(th); sP[i3+1]=r*Math.sin(ph)*Math.sin(th); sP[i3+2]=r*Math.cos(ph);
+        const c=Math.random();
+        if(c<.6){sC[i3]=1;sC[i3+1]=1;sC[i3+2]=1;}else if(c<.8){sC[i3]=.7;sC[i3+1]=.8;sC[i3+2]=1;}else{sC[i3]=1;sC[i3+1]=.95;sC[i3+2]=.8;}
+        sS[i]=Math.random()*2+.5;
+    }
+    const sGeo = new THREE.BufferGeometry();
+    sGeo.setAttribute('position', new THREE.BufferAttribute(sP,3));
+    sGeo.setAttribute('color', new THREE.BufferAttribute(sC,3));
+    sGeo.setAttribute('size', new THREE.BufferAttribute(sS,1));
+    const sMat = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: `attribute float size;attribute vec3 color;varying vec3 vColor;uniform float time;
+            void main(){vColor=color;vec4 mv=modelViewMatrix*vec4(position,1.);
+            gl_PointSize=size*(300./-mv.z)*(sin(time*2.+position.x*.01)*.3+.7);gl_Position=projectionMatrix*mv;}`,
+        fragmentShader: `varying vec3 vColor;void main(){float d=length(gl_PointCoord-.5);
+            float a=1.-smoothstep(0.,.5,d);gl_FragColor=vec4(vColor,(a+exp(-d*3.)*.5)*.9);}`,
+        transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    scene.add(new THREE.Points(sGeo, sMat));
+
+    // ============ 相机切换 ============
+    let camTgt = null, camAnimating = false;
+    window.updateScene3D = function(target) {
+        const v = VIEWS[target] || VIEWS.earth;
+        camTgt = { pos: v.pos, look: v.look };
+        camAnimating = true;
+        controls.minDistance = v.minD; controls.maxDistance = v.maxD;
+        Object.keys(distObjs).forEach(k => {
+            distObjs[k].line.visible = (k === target);
+            distObjs[k].label.visible = (k === target);
+        });
+    };
+
+    function resize() {
+        const w = container.clientWidth, h = container.clientHeight;
+        renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix();
+    }
+    resize(); window.addEventListener('resize', resize);
+
+    function anim3D(ts) {
+        requestAnimationFrame(anim3D);
+        const t = ts * 0.001;
+        sunMat.uniforms.time.value = t; coronaMat.uniforms.time.value = t; sMat.uniforms.time.value = t;
+        planetMeshes.forEach(m => { m.rotation.y += 0.003; });
+        if (cloudMesh) cloudMesh.rotation.y -= 0.001;
+        Object.values(distObjs).forEach(d => { if (d.line.visible) d.line.material.opacity = 0.25 + Math.sin(t*1.5)*0.1; });
+        if (camAnimating && camTgt) {
+            const s = 0.05;
+            camera.position.x += (camTgt.pos[0]-camera.position.x)*s;
+            camera.position.y += (camTgt.pos[1]-camera.position.y)*s;
+            camera.position.z += (camTgt.pos[2]-camera.position.z)*s;
+            controls.target.x += (camTgt.look[0]-controls.target.x)*s;
+            controls.target.y += (camTgt.look[1]-controls.target.y)*s;
+            controls.target.z += (camTgt.look[2]-controls.target.z)*s;
+            if (Math.abs(camera.position.z-camTgt.pos[2]) < 0.1) camAnimating = false;
+        }
+        controls.update(); renderer.render(scene, camera);
+    }
+    requestAnimationFrame(anim3D);
+})();
+</script>
+<script>
+// ============ 数据 ============
+const EARTH_DISTANCE = 150_000_000;
+const URANUS_DISTANCE = 2_878_500_000; // 19.19 AU
+
+const EARTH_VEHICLES = [
+    {
+        id: 'walk', icon: '🚶', name: '步行',
+        speedKmH: 5, speedDisplay: '5 km/h', color: '#9e9e9e',
+        arrivalMsg: '3,424年 — 从大禹治水走到今天！',
+        funFact: '人类文明的历史都不够走完这段路！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '10天', fun: '每天走8小时，要走10天' },
+            { label: '绕地球一圈', dist: '4万公里', time: '11个月', fun: '走了将近一整年' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '近9年', fun: '嘟嘟从出生走到上小学' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '1,256年', fun: '从唐朝走到现在' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '3,424年', fun: '从大禹治水走到今天' },
+        ]
+    },
+    {
+        id: 'ebike', icon: '🛵', name: '电动车',
+        speedKmH: 25, speedDisplay: '25 km/h', color: '#66bb6a',
+        arrivalMsg: '685年 — 从元朝骑到现在！',
+        funFact: '685年前是元朝，那时候还没有电动车呢！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '2天', fun: '骑两天两夜' },
+            { label: '绕地球一圈', dist: '4万公里', time: '67天', fun: '两个多月' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '1年9个月', fun: '差不多两年' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '251年', fun: '从清朝骑到现在' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '685年', fun: '从元朝骑到现在' },
+        ]
+    },
+    {
+        id: 'car', icon: '🚗', name: '小汽车',
+        speedKmH: 120, speedDisplay: '120 km/h', color: '#42a5f5',
+        arrivalMsg: '143年 — 爷爷开到孙子接着开！',
+        funFact: '一家三代人接力开车都到不了太阳！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '10小时', fun: '早上出发，晚上到' },
+            { label: '绕地球一圈', dist: '4万公里', time: '14天', fun: '两个星期不停车' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '4个半月', fun: '快一个学期了' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '52年', fun: '嘟嘟开到变老爷爷' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '143年', fun: '爷爷传爸爸，爸爸传儿子' },
+        ]
+    },
+    {
+        id: 'train', icon: '🚄', name: '高铁',
+        speedKmH: 350, speedDisplay: '350 km/h', color: '#ab47bc',
+        arrivalMsg: '49年 — 嘟嘟坐到头发白了！',
+        funFact: '从小宝宝坐到老爷爷！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '3.5小时', fun: '看一部动画片电影' },
+            { label: '绕地球一圈', dist: '4万公里', time: '5天', fun: '不到一个星期' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '46天', fun: '一个半月' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '18年', fun: '嘟嘟坐到上大学' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '49年', fun: '嘟嘟坐到头发变白' },
+        ]
+    },
+    {
+        id: 'plane', icon: '✈️', name: '飞机',
+        speedKmH: 900, speedDisplay: '900 km/h', color: '#26c6da',
+        arrivalMsg: '19年 — 从小宝宝飞到大学毕业还没到！',
+        funFact: '坐飞机去太阳？从出生到大学毕业都不够！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '1小时20分', fun: '看两集动画片' },
+            { label: '绕地球一圈', dist: '4万公里', time: '44小时', fun: '差不多两天' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '18天', fun: '不到三个星期' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '7年', fun: '嘟嘟飞到上小学' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '19年', fun: '嘟嘟飞到大学毕业还没到' },
+        ]
+    },
+    {
+        id: 'rocket', icon: '🚀', name: '火箭',
+        speedKmH: 40000, speedDisplay: '4万 km/h', color: '#ff7043',
+        arrivalMsg: '5个月 — 差不多一个学期！',
+        funFact: '火箭已经很快了，但到太阳还要半年！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '不到2分钟', fun: '眨几下眼' },
+            { label: '绕地球一圈', dist: '4万公里', time: '1小时', fun: '一节课的时间' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '不到10小时', fun: '睡一觉就到了' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '57天', fun: '差不多两个月' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '5个月', fun: '差不多一个学期' },
+        ]
+    },
+    {
+        id: 'light', icon: '⚡', name: '光',
+        speedKmH: 1_080_000_000, speedDisplay: '30万 km/s', color: '#ffd54f',
+        arrivalMsg: '8分20秒 — 吃半个苹果的时间！',
+        funFact: '光是宇宙中最快的！但到太阳也要8分多钟呢！',
+        milestones: [
+            { label: '北京→上海', dist: '1,200公里', time: '0.004秒', fun: '比眨眼快一千倍' },
+            { label: '绕地球一圈', dist: '4万公里', time: '0.13秒', fun: '一眨眼就绕了地球' },
+            { label: '到达月球 🌙', dist: '38万公里', time: '1.3秒', fun: '说一个字的时间' },
+            { label: '到达火星 🔴', dist: '5,500万公里', time: '3分钟', fun: '刷一次牙的时间' },
+            { label: '到达太阳 ☀️', dist: '1.5亿公里', time: '8分20秒', fun: '吃半个苹果的时间' },
+        ]
+    },
+];
+
+const URANUS_VEHICLES = [
+    {
+        id: 'walk', icon: '🚶', name: '步行',
+        speedKmH: 5, speedDisplay: '5 km/h', color: '#9e9e9e',
+        arrivalMsg: '65,718年 — 比人类文明还要久！',
+        funFact: '步行到天王星？整个人类文明史都不够！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里（1 AU）', time: '3,424年', fun: '从大禹治水走到今天' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '5,205年', fun: '从三皇五帝走到今天' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '17,808年', fun: '从旧石器时代走来' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '32,648年', fun: '比已知文明史还早' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里（19.19 AU）', time: '65,718年', fun: '比人类文明还要久！' },
+        ]
+    },
+    {
+        id: 'ebike', icon: '🛵', name: '电动车',
+        speedKmH: 25, speedDisplay: '25 km/h', color: '#66bb6a',
+        arrivalMsg: '13,144年 — 从石器时代骑到今天！',
+        funFact: '从新石器时代开始骑，现在也到不了天王星！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '685年', fun: '从元朝骑到现在' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '1,041年', fun: '从北宋骑到现在' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '3,562年', fun: '从商朝骑到现在' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '6,530年', fun: '比中华文明还早' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '13,144年', fun: '从石器时代骑到今天！' },
+        ]
+    },
+    {
+        id: 'car', icon: '🚗', name: '小汽车',
+        speedKmH: 120, speedDisplay: '120 km/h', color: '#42a5f5',
+        arrivalMsg: '2,738年 — 从春秋时期开到现在！',
+        funFact: '从孔子时代开始开车，现在刚好到天王星！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '143年', fun: '爷爷传爸爸传儿子' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '217年', fun: '从清朝开到现在' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '742年', fun: '从南宋开到现在' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '1,360年', fun: '从唐朝开到现在' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '2,738年', fun: '从春秋时期开到现在！' },
+        ]
+    },
+    {
+        id: 'train', icon: '🚄', name: '高铁',
+        speedKmH: 350, speedDisplay: '350 km/h', color: '#ab47bc',
+        arrivalMsg: '938年 — 从北宋坐到现在！',
+        funFact: '从宋太祖时代出发，现在才到天王星！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '49年', fun: '嘟嘟坐到头发白了' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '74年', fun: '一辈子' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '254年', fun: '从清朝坐到现在' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '466年', fun: '从明朝坐到现在' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '938年', fun: '从北宋坐到现在！' },
+        ]
+    },
+    {
+        id: 'plane', icon: '✈️', name: '飞机',
+        speedKmH: 900, speedDisplay: '900 km/h', color: '#26c6da',
+        arrivalMsg: '365年 — 从清朝飞到现在！',
+        funFact: '从清朝顺治年间起飞，现在才到天王星！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '19年', fun: '嘟嘟飞到大学毕业' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '29年', fun: '嘟嘟飞到三十岁' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '99年', fun: '飞一辈子还多' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '181年', fun: '从清朝飞到现在' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '365年', fun: '从清朝飞到现在！' },
+        ]
+    },
+    {
+        id: 'rocket', icon: '🚀', name: '火箭',
+        speedKmH: 40000, speedDisplay: '4万 km/h', color: '#ff7043',
+        arrivalMsg: '8.2年 — 嘟嘟坐到上初中！',
+        funFact: '火箭飞8年多才能到天王星，太远了！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '5个月', fun: '差不多一个学期' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '8个月', fun: '不到一年' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '2.2年', fun: '两年多一点' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '4.1年', fun: '差不多上完小学' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '8.2年', fun: '嘟嘟坐到上初中！' },
+        ]
+    },
+    {
+        id: 'light', icon: '⚡', name: '光',
+        speedKmH: 1_080_000_000, speedDisplay: '30万 km/s', color: '#ffd54f',
+        arrivalMsg: '2小时40分 — 看一部电影的时间！',
+        funFact: '光速飞也要将近3小时！天王星真的好远！',
+        milestones: [
+            { label: '到达地球轨道 🌍', dist: '1.5亿公里', time: '8分20秒', fun: '吃半个苹果' },
+            { label: '到达火星轨道 🔴', dist: '2.28亿公里', time: '12分40秒', fun: '课间休息' },
+            { label: '到达木星轨道 🟤', dist: '7.8亿公里', time: '43分', fun: '一节课的时间' },
+            { label: '到达土星轨道 🪐', dist: '14.3亿公里', time: '1小时20分', fun: '看半部电影' },
+            { label: '到达天王星 🔵', dist: '28.7亿公里', time: '2小时40分', fun: '看一部电影的时间！' },
+        ]
+    },
+];
+
+const MERCURY_DISTANCE = 58_500_000;
+const MERCURY_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'1,335年 — 从唐朝走到现在！',funFact:'从唐朝出发一直走，到现在才刚到水星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'8.7年',fun:'嘟嘟走到上高中'},{label:'经过1,000万公里',dist:'1,000万公里',time:'228年',fun:'从清朝走到现在'},{label:'经过3,000万公里',dist:'3,000万公里',time:'685年',fun:'从元朝走到现在'},{label:'经过5,000万公里',dist:'5,000万公里',time:'1,141年',fun:'从北宋走到现在'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'1,335年',fun:'从唐朝走到现在！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'267年 — 从清朝骑到现在！',funFact:'从清朝康熙年间开始骑，现在才到水星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'1.7年',fun:'骑不到两年'},{label:'经过1,000万公里',dist:'1,000万公里',time:'45.6年',fun:'嘟嘟骑到退休'},{label:'经过3,000万公里',dist:'3,000万公里',time:'137年',fun:'骑了好几代人'},{label:'经过5,000万公里',dist:'5,000万公里',time:'228年',fun:'从清朝骑到现在'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'267年',fun:'从清朝骑到现在！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'55.6年 — 嘟嘟开到退休！',funFact:'嘟嘟从出生开始开车，开到退休才到水星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'4个半月',fun:'一个学期还没结束'},{label:'经过1,000万公里',dist:'1,000万公里',time:'9.5年',fun:'嘟嘟开到上小学四年级'},{label:'经过3,000万公里',dist:'3,000万公里',time:'28.5年',fun:'嘟嘟开到三十岁'},{label:'经过5,000万公里',dist:'5,000万公里',time:'47.5年',fun:'快要退休了'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'55.6年',fun:'嘟嘟开到退休！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'19.1年 — 嘟嘟坐到大学毕业！',funFact:'嘟嘟出生就坐高铁，大学毕业才到水星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'45天',fun:'一个半月'},{label:'经过1,000万公里',dist:'1,000万公里',time:'3.3年',fun:'坐了三年多'},{label:'经过3,000万公里',dist:'3,000万公里',time:'9.8年',fun:'嘟嘟坐到上四年级'},{label:'经过5,000万公里',dist:'5,000万公里',time:'16.3年',fun:'嘟嘟坐到上高中'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'19.1年',fun:'嘟嘟坐到大学毕业！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'7.4年 — 嘟嘟飞到上小学！',funFact:'从幼儿园开始飞，上小学二年级才到水星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'18天',fun:'不到三个星期'},{label:'经过1,000万公里',dist:'1,000万公里',time:'1.3年',fun:'飞了一年多'},{label:'经过3,000万公里',dist:'3,000万公里',time:'3.8年',fun:'快飞四年了'},{label:'经过5,000万公里',dist:'5,000万公里',time:'6.3年',fun:'嘟嘟飞到上小学'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'7.4年',fun:'嘟嘟飞到上小学二年级！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'2个月 — 放一个暑假！',funFact:'火箭飞两个月就到水星，刚好一个暑假！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'9.5小时',fun:'睡一觉就到月球了'},{label:'经过1,000万公里',dist:'1,000万公里',time:'10天',fun:'一个多星期'},{label:'经过3,000万公里',dist:'3,000万公里',time:'1个月',fun:'一个月整'},{label:'经过5,000万公里',dist:'5,000万公里',time:'52天',fun:'快两个月了'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'2个月',fun:'正好一个暑假！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'3分15秒 — 刷个牙就到了！',funFact:'光速飞到水星只要3分多钟，刷完牙就到了！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'1.3秒',fun:'眨一下眼'},{label:'经过1,000万公里',dist:'1,000万公里',time:'33秒',fun:'数30下'},{label:'经过3,000万公里',dist:'3,000万公里',time:'1分40秒',fun:'唱一首儿歌'},{label:'经过5,000万公里',dist:'5,000万公里',time:'2分47秒',fun:'快刷完牙了'},{label:'到达水星 ☿',dist:'5,850万公里（0.39 AU）',time:'3分15秒',fun:'刷完牙就到了！'}]},
+];
+
+const VENUS_DISTANCE = 108_000_000;
+const VENUS_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'2,464年 — 从春秋战国走到现在！',funFact:'从孔子时代出发走路，到现在才刚到金星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'8.7年',fun:'嘟嘟走到上高中'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'1,335年',fun:'从唐朝走到现在'},{label:'经过8,000万公里',dist:'8,000万公里',time:'1,826年',fun:'从东汉走到现在'},{label:'经过1亿公里',dist:'1亿公里',time:'2,282年',fun:'从战国时期走到现在'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'2,464年',fun:'从春秋战国走到现在！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'493年 — 从明朝骑到现在！',funFact:'从明朝开始骑电动车，到现在才到金星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'1.7年',fun:'骑不到两年'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'267年',fun:'从清朝骑到现在'},{label:'经过8,000万公里',dist:'8,000万公里',time:'365年',fun:'从明末骑到现在'},{label:'经过1亿公里',dist:'1亿公里',time:'456年',fun:'从明朝中期骑到现在'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'493年',fun:'从明朝骑到现在！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'103年 — 从清末开到现在！',funFact:'从清朝末年开始开车，现在刚好到金星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'4个半月',fun:'一个学期还没结束'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'55.6年',fun:'嘟嘟开到退休'},{label:'经过8,000万公里',dist:'8,000万公里',time:'76年',fun:'开了一辈子'},{label:'经过1亿公里',dist:'1亿公里',time:'95年',fun:'超过一辈子了'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'103年',fun:'从清末开到现在！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'35.2年 — 嘟嘟坐到三十多岁！',funFact:'嘟嘟出生就坐高铁，要坐到三十多岁才到金星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'45天',fun:'一个半月'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'19.1年',fun:'嘟嘟坐到大学毕业'},{label:'经过8,000万公里',dist:'8,000万公里',time:'26.1年',fun:'嘟嘟坐到二十六岁'},{label:'经过1亿公里',dist:'1亿公里',time:'32.6年',fun:'嘟嘟坐到三十多岁'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'35.2年',fun:'嘟嘟坐到三十五岁！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'13.7年 — 嘟嘟飞到上初中！',funFact:'从幼儿园开始飞，上初中才到金星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'18天',fun:'不到三个星期'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'7.4年',fun:'嘟嘟飞到上小学'},{label:'经过8,000万公里',dist:'8,000万公里',time:'10.1年',fun:'嘟嘟飞到十岁'},{label:'经过1亿公里',dist:'1亿公里',time:'12.7年',fun:'嘟嘟快上初中了'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'13.7年',fun:'嘟嘟飞到上初中！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'3.7个月 — 差不多一个学期！',funFact:'火箭飞不到四个月就到金星，一个学期都不到！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'9.5小时',fun:'睡一觉就到月球了'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'2个月',fun:'正好一个暑假'},{label:'经过8,000万公里',dist:'8,000万公里',time:'83天',fun:'快三个月了'},{label:'经过1亿公里',dist:'1亿公里',time:'104天',fun:'三个半月'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'112天',fun:'差不多一个学期！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'6分钟 — 吃半个苹果的时间！',funFact:'光速飞到金星只要6分钟，吃半个苹果就到了！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'1.3秒',fun:'眨一下眼'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'3分15秒',fun:'刷完牙了'},{label:'经过8,000万公里',dist:'8,000万公里',time:'4分27秒',fun:'听一首儿歌'},{label:'经过1亿公里',dist:'1亿公里',time:'5分33秒',fun:'苹果快吃完了'},{label:'到达金星 ♀',dist:'1.08亿公里（0.72 AU）',time:'6分钟',fun:'吃半个苹果就到了！'}]},
+];
+
+const MARS_DISTANCE = 228_000_000;
+const MARS_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'5,202年 — 从三皇五帝走到今天！',funFact:'步行到火星要五千多年，比中华文明还久！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'9年',fun:'嘟嘟走到上初中'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'1,335年',fun:'从唐朝走到现在'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'2,464年',fun:'从春秋时期走到现在'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'3,422年',fun:'从商朝走到现在'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'5,202年',fun:'从三皇五帝走到今天！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'1,040年 — 从北宋骑到现在！',funFact:'从宋太祖时代骑电动车出发，现在才到火星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'2年',fun:'骑两年就到月球了'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'267年',fun:'从清朝骑到现在'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'493年',fun:'从明朝骑到现在'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'684年',fun:'从元朝骑到现在'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'1,040年',fun:'从北宋骑到现在！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'217年 — 从清朝开到现在！',funFact:'从清朝嘉庆年间出发开车，现在刚到火星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'4个月',fun:'一个学期还没完'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'56年',fun:'嘟嘟开到头发白了'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'103年',fun:'开一辈子还不够'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'143年',fun:'爷爷传爸爸传儿子'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'217年',fun:'从清朝开到现在！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'74年 — 坐一辈子高铁！',funFact:'从出生坐到老，一辈子都花在高铁上才到火星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'45天',fun:'一个半月'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'19年',fun:'嘟嘟坐到大学毕业'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'35年',fun:'嘟嘟坐到中年'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'49年',fun:'嘟嘟坐到头发白了'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'74年',fun:'坐一辈子高铁！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'29年 — 嘟嘟飞到三十岁！',funFact:'嘟嘟从出生开始坐飞机，飞到29岁才到火星！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'18天',fun:'差不多半个月'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'7年',fun:'嘟嘟飞到上小学'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'14年',fun:'嘟嘟飞到上高中'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'19年',fun:'嘟嘟飞到上大学'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'29年',fun:'嘟嘟飞到三十岁！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'8个月 — 不到一年就到了！',funFact:'火箭飞8个月就能到火星，真正的太空旅行！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'9.5小时',fun:'睡一觉就到月球'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'2个月',fun:'暑假刚开始'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'3.7个月',fun:'差不多一个学期'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'5个月',fun:'差不多一个学期'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'8个月',fun:'不到一年就到了！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'12分40秒 — 课间休息的时间！',funFact:'光速到火星只要12分钟多，刚好课间休息！',milestones:[{label:'到达月球距离 🌙',dist:'38万公里',time:'1.3秒',fun:'眨一下眼睛'},{label:'到达水星轨道 ☿',dist:'5,850万公里',time:'3分15秒',fun:'刷一次牙'},{label:'到达金星轨道 ♀',dist:'1.08亿公里',time:'6分钟',fun:'吃几口早饭'},{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'8分20秒',fun:'吃半个苹果'},{label:'到达火星 🔴',dist:'2.28亿公里（1.52 AU）',time:'12分40秒',fun:'课间休息的时间！'}]},
+];
+
+const JUPITER_DISTANCE = 780_000_000;
+const JUPITER_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'17,796年 — 从旧石器时代走到今天！',funFact:'步行到木星？从原始人开始走，现在才刚到！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里（1 AU）',time:'3,422年',fun:'从商朝走到现在'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'5,202年',fun:'从三皇五帝走到现在'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'9,126年',fun:'比中华文明还早'},{label:'经过6亿公里',dist:'6亿公里',time:'13,689年',fun:'从旧石器时代走来'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'17,796年',fun:'从旧石器时代走到今天！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'3,559年 — 从商朝骑到现在！',funFact:'从商朝开始骑电动车，骑到今天才到木星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'684年',fun:'从元朝骑到现在'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'1,040年',fun:'从北宋骑到现在'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'1,825年',fun:'从东汉骑到现在'},{label:'经过6亿公里',dist:'6亿公里',time:'2,738年',fun:'从春秋骑到现在'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'3,559年',fun:'从商朝骑到现在！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'742年 — 从南宋开到现在！',funFact:'从南宋时期出发开车，现在才刚到木星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'143年',fun:'爷爷传爸爸传儿子'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'217年',fun:'从清朝开到现在'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'380年',fun:'从明朝开到现在'},{label:'经过6亿公里',dist:'6亿公里',time:'570年',fun:'从明朝初年开到现在'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'742年',fun:'从南宋开到现在！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'254年 — 从清朝坐到现在！',funFact:'从清朝乾隆年间出发坐高铁，现在才到木星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'49年',fun:'嘟嘟坐到头发白了'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'74年',fun:'一辈子'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'130年',fun:'从清朝末年坐到现在'},{label:'经过6亿公里',dist:'6亿公里',time:'196年',fun:'从清朝坐到现在'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'254年',fun:'从清朝坐到现在！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'99年 — 飞一辈子还多！',funFact:'坐飞机飞到木星要99年，比一辈子还长！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'19年',fun:'嘟嘟飞到上大学'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'29年',fun:'嘟嘟飞到三十岁'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'51年',fun:'飞到头发白了'},{label:'经过6亿公里',dist:'6亿公里',time:'76年',fun:'飞了一辈子'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'99年',fun:'飞一辈子还多！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'2.2年 — 两年多一点！',funFact:'火箭飞两年多就能到木星，太空探测器就是这么去的！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'5个月',fun:'差不多一个学期'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'8个月',fun:'不到一年'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'1.1年',fun:'刚过一年'},{label:'经过6亿公里',dist:'6亿公里',time:'1.7年',fun:'快两年了'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'2.2年',fun:'两年多一点！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'43分20秒 — 一节课的时间！',funFact:'光速飞到木星要43分钟，正好上一节课！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'8分20秒',fun:'吃半个苹果'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'12分40秒',fun:'课间休息'},{label:'穿过小行星带 ☄️',dist:'约4亿公里',time:'22分13秒',fun:'做几道数学题'},{label:'经过6亿公里',dist:'6亿公里',time:'33分20秒',fun:'半节课过去了'},{label:'到达木星 🟤',dist:'7.8亿公里（5.2 AU）',time:'43分20秒',fun:'一节课的时间！'}]},
+];
+
+const SATURN_DISTANCE = 1_431_000_000;
+const SATURN_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'32,649年 — 比人类文明还要久！',funFact:'步行到土星？三万多年，比整个人类文明还长！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'3,422年',fun:'从商朝走到现在'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'5,202年',fun:'从三皇五帝走到现在'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'17,796年',fun:'从旧石器时代走来'},{label:'经过10亿公里',dist:'10亿公里',time:'22,815年',fun:'比已知文明史还早'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'32,649年',fun:'比人类文明还要久！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'6,530年 — 比中华文明还久！',funFact:'从黄帝时代骑电动车出发，现在都到不了土星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'684年',fun:'从元朝骑到现在'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'1,040年',fun:'从北宋骑到现在'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'3,559年',fun:'从商朝骑到现在'},{label:'经过10亿公里',dist:'10亿公里',time:'4,563年',fun:'从三皇五帝骑到现在'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'6,530年',fun:'比中华文明还久！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'1,360年 — 从唐朝开到现在！',funFact:'从唐朝开始开车，一路开到现在才到土星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'143年',fun:'爷爷传爸爸传儿子'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'217年',fun:'从清朝开到现在'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'742年',fun:'从南宋开到现在'},{label:'经过10亿公里',dist:'10亿公里',time:'951年',fun:'从北宋开到现在'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'1,360年',fun:'从唐朝开到现在！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'466年 — 从明朝坐到现在！',funFact:'从明朝出发坐高铁，现在才到土星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'49年',fun:'嘟嘟坐到头发白了'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'74年',fun:'一辈子'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'254年',fun:'从清朝坐到现在'},{label:'经过10亿公里',dist:'10亿公里',time:'326年',fun:'从清朝初年坐到现在'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'466年',fun:'从明朝坐到现在！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'181年 — 从清朝飞到现在！',funFact:'从清朝道光年间起飞，飞到现在才到土星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'19年',fun:'嘟嘟飞到上大学'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'29年',fun:'嘟嘟飞到三十岁'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'99年',fun:'飞一辈子还多'},{label:'经过10亿公里',dist:'10亿公里',time:'127年',fun:'飞一辈子都不够'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'181年',fun:'从清朝飞到现在！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'4.1年 — 差不多上完小学！',funFact:'火箭飞四年才能到土星，嘟嘟都快上完小学了！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'5个月',fun:'差不多一个学期'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'8个月',fun:'不到一年'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'2.2年',fun:'两年多一点'},{label:'经过10亿公里',dist:'10亿公里',time:'2.9年',fun:'快三年了'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'4.1年',fun:'差不多上完小学！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'1小时19分 — 看半部电影！',funFact:'光速飞到土星要将近一个半小时，看半部电影！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'8分20秒',fun:'吃半个苹果'},{label:'到达火星轨道 🔴',dist:'2.28亿公里',time:'12分40秒',fun:'课间休息'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'43分20秒',fun:'一节课的时间'},{label:'经过10亿公里',dist:'10亿公里',time:'55分33秒',fun:'快一个小时了'},{label:'到达土星 🪐',dist:'14.3亿公里（9.54 AU）',time:'1小时19分',fun:'看半部电影！'}]},
+];
+
+const NEPTUNE_DISTANCE = 4_510_500_000;
+const NEPTUNE_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'102,911年 — 远远超过人类文明的全部历史！',funFact:'步行到海王星？就算从石器时代走到现在，也才走了不到一半！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里（1 AU）',time:'3,424年',fun:'从大禹治水走到今天'},{label:'到达木星轨道 🟤',dist:'7.8亿公里（5.2 AU）',time:'17,799年',fun:'从旧石器时代走来'},{label:'到达土星轨道 🪐',dist:'14.3亿公里（9.54 AU）',time:'32,627年',fun:'比已知文明史还早'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里（19.19 AU）',time:'65,480年',fun:'比人类文明还要久'},{label:'到达海王星 🌊',dist:'45.1亿公里（30.07 AU）',time:'102,911年',fun:'十万年！远超人类全部历史！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'20,582年 — 从旧石器时代骑到今天还不够！',funFact:'两万多年前人类还住在山洞里，骑电动车到海王星要这么久！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'685年',fun:'从元朝骑到现在'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'3,560年',fun:'从商朝骑到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'6,525年',fun:'比中华文明还早'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'13,096年',fun:'从石器时代骑到今天'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'20,582年',fun:'两万年！人类那时还在山洞里！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'4,288年 — 从三皇五帝时代开到现在！',funFact:'从黄帝时代开始开车，到今天刚好能到海王星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'143年',fun:'爷爷传爸爸传儿子'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'742年',fun:'从南宋开到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'1,359年',fun:'从唐朝开到现在'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'2,729年',fun:'从春秋时期开到现在'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'4,288年',fun:'从三皇五帝时代开到现在！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'1,470年 — 从南北朝坐到现在！',funFact:'从南北朝时期出发坐高铁，到今天才能到海王星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'49年',fun:'嘟嘟坐到头发白了'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'254年',fun:'从清朝坐到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'466年',fun:'从明朝坐到现在'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'935年',fun:'从北宋坐到现在'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'1,470年',fun:'从南北朝坐到现在！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'572年 — 从明朝飞到现在！',funFact:'从明朝永乐大帝时起飞，现在才刚到海王星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'19年',fun:'嘟嘟飞到大学毕业'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'99年',fun:'飞一辈子还多'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'181年',fun:'从清朝飞到现在'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'364年',fun:'从明末飞到现在'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'572年',fun:'从明朝飞到现在！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'12.9年 — 嘟嘟坐到上初中！',funFact:'火箭飞将近13年才能到海王星，比天王星还要多飞5年！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'5个月',fun:'差不多一个学期'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'2.2年',fun:'两年多一点'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'4.1年',fun:'差不多上完小学'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'8.2年',fun:'从小学坐到初中'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'12.9年',fun:'嘟嘟坐到上初中！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'4小时10分 — 从早上出发中午前到！',funFact:'光速飞也要4个多小时！海王星是太阳系最远的大行星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'8分20秒',fun:'吃半个苹果'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'43分',fun:'一节课的时间'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'1小时19分',fun:'看半部电影'},{label:'到达天王星轨道 🔵',dist:'28.7亿公里',time:'2小时39分',fun:'看一部电影'},{label:'到达海王星 🌊',dist:'45.1亿公里',time:'4小时10分',fun:'从早上出发中午前到！'}]},
+];
+
+const PLUTO_DISTANCE = 5_922_000_000;
+const PLUTO_VEHICLES = [
+    { id:'walk',icon:'🚶',name:'步行',speedKmH:5,speedDisplay:'5 km/h',color:'#9e9e9e',arrivalMsg:'135,126年 — 十三万年！人类那时还不会说话！',funFact:'步行到冥王星？十三万年前智人刚刚出现在非洲！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里（1 AU）',time:'3,424年',fun:'从大禹治水走到今天'},{label:'到达木星轨道 🟤',dist:'7.8亿公里（5.2 AU）',time:'17,799年',fun:'从旧石器时代走来'},{label:'到达土星轨道 🪐',dist:'14.3亿公里（9.54 AU）',time:'32,627年',fun:'比已知文明史还早'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里（30.07 AU）',time:'102,911年',fun:'十万年！远超人类全部历史'},{label:'到达冥王星 ⚪',dist:'59.2亿公里（39.48 AU）',time:'135,126年',fun:'十三万年！智人刚刚出现！'}]},
+    { id:'ebike',icon:'🛵',name:'电动车',speedKmH:25,speedDisplay:'25 km/h',color:'#66bb6a',arrivalMsg:'27,025年 — 从旧石器时代骑到今天远远不够！',funFact:'两万七千年前人类还在画洞穴壁画，骑电动车到冥王星要这么久！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'685年',fun:'从元朝骑到现在'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'3,560年',fun:'从商朝骑到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'6,525年',fun:'比中华文明还早'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'20,582年',fun:'两万年！人类那时住山洞'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'27,025年',fun:'人类那时还在画洞穴壁画！'}]},
+    { id:'car',icon:'🚗',name:'小汽车',speedKmH:120,speedDisplay:'120 km/h',color:'#42a5f5',arrivalMsg:'5,630年 — 比中华文明的全部历史还长！',funFact:'五千多年前还没有文字呢，开车到冥王星要这么久！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'143年',fun:'爷爷传爸爸传儿子'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'742年',fun:'从南宋开到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'1,359年',fun:'从唐朝开到现在'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'4,288年',fun:'从三皇五帝开到现在'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'5,630年',fun:'比中华文明全部历史还长！'}]},
+    { id:'train',icon:'🚄',name:'高铁',speedKmH:350,speedDisplay:'350 km/h',color:'#ab47bc',arrivalMsg:'1,930年 — 从汉朝坐到现在！',funFact:'从东汉末年出发坐高铁，到2026年才刚好到冥王星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'49年',fun:'嘟嘟坐到头发白了'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'254年',fun:'从清朝坐到现在'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'466年',fun:'从明朝坐到现在'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'1,470年',fun:'从南北朝坐到现在'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'1,930年',fun:'从东汉坐到现在！'}]},
+    { id:'plane',icon:'✈️',name:'飞机',speedKmH:900,speedDisplay:'900 km/h',color:'#26c6da',arrivalMsg:'751年 — 从南宋飞到现在！',funFact:'从南宋末年起飞，到今天才能到冥王星！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'19年',fun:'嘟嘟飞到大学毕业'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'99年',fun:'飞一辈子还多'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'181年',fun:'从清朝飞到现在'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'572年',fun:'从明朝飞到现在'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'751年',fun:'从南宋飞到现在！'}]},
+    { id:'rocket',icon:'🚀',name:'火箭',speedKmH:40000,speedDisplay:'4万 km/h',color:'#ff7043',arrivalMsg:'16.9年 — 嘟嘟坐到上大学！',funFact:'火箭飞将近17年才能到冥王星，嘟嘟都上大学了！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'5个月',fun:'差不多一个学期'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'2.2年',fun:'两年多一点'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'4.1年',fun:'差不多上完小学'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'12.9年',fun:'从小学坐到初中'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'16.9年',fun:'嘟嘟坐到上大学！'}]},
+    { id:'light',icon:'⚡',name:'光',speedKmH:1_080_000_000,speedDisplay:'30万 km/s',color:'#ffd54f',arrivalMsg:'5小时29分 — 从早上出发下午才到！',funFact:'光速飞也要5个半小时！冥王星是太阳系最远的家族成员！',milestones:[{label:'到达地球轨道 🌍',dist:'1.5亿公里',time:'8分20秒',fun:'吃半个苹果'},{label:'到达木星轨道 🟤',dist:'7.8亿公里',time:'43分',fun:'一节课的时间'},{label:'到达土星轨道 🪐',dist:'14.3亿公里',time:'1小时19分',fun:'看半部电影'},{label:'到达海王星轨道 🌊',dist:'45.1亿公里',time:'4小时10分',fun:'从早上到中午'},{label:'到达冥王星 ⚪',dist:'59.2亿公里',time:'5小时29分',fun:'从早上出发下午才到！'}]},
+];
+
+const SPEED_HINTS = {
+    10000: '1秒 ≈ 2.8小时，适合观看 ⚡光',
+    1000000: '1秒 ≈ 11.6天，适合观看 🚀火箭',
+    100000000: '1秒 ≈ 3.2年，适合观看 ✈️🚄🚗',
+    1000000000: '1秒 ≈ 31.7年，所有交通工具可见',
+    10000000000: '1秒 ≈ 317年，快速浏览',
+};
+
+// ============ 状态 ============
+let currentTarget = 'earth';
+let sunDistance = EARTH_DISTANCE;
+let raceState = 'idle';
+let simSeconds = 0;
+let speedMul = 100_000_000;
+let lastTs = null;
+let rankCounter = 0;
+let expandedCard = null;
+const vStates = {};
+
+const PLANET_CFG = {
+    mercury:{ dist: MERCURY_DISTANCE, vehicles: MERCURY_VEHICLES, name:'水星', intro:'水星到太阳有 5,850 万公里（0.39 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到水星要多久？', journey:'水星之旅', footer:'⚡光到水星只要 3 分 15 秒，🚶步行要 1,335 年！水星离太阳最近！', defSpeed: 100_000_000 },
+    venus:  { dist: VENUS_DISTANCE, vehicles: VENUS_VEHICLES, name:'金星', intro:'金星到太阳有 1.08 亿公里（0.72 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到金星要多久？', journey:'金星之旅', footer:'⚡光到金星只要 6 分钟，🚶步行要 2,464 年！金星是离地球最近的行星！', defSpeed: 100_000_000 },
+    earth:  { dist: EARTH_DISTANCE, vehicles: EARTH_VEHICLES, name:'地球', intro:'地球到太阳有 1 亿 5 千万公里远！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'谁能最快到达太阳？', journey:'太阳之旅', footer:'⚡光比🚶步行快 2.16 亿倍！太阳真的好远好远！', defSpeed: 100_000_000 },
+    mars:   { dist: MARS_DISTANCE, vehicles: MARS_VEHICLES, name:'火星', intro:'火星到太阳有 2.28 亿公里（1.52 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到火星要多久？', journey:'火星之旅', footer:'⚡光到火星要 12 分 40 秒，🚶步行要 5,202 年！火星比地球远一半！', defSpeed: 100_000_000 },
+    jupiter:{ dist: JUPITER_DISTANCE, vehicles: JUPITER_VEHICLES, name:'木星', intro:'木星到太阳有 7.8 亿公里（5.2 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到木星要多久？', journey:'木星之旅', footer:'⚡光到木星要 43 分钟，🚶步行要 17,796 年！木星是太阳系最大的行星！', defSpeed: 1_000_000_000 },
+    saturn: { dist: SATURN_DISTANCE, vehicles: SATURN_VEHICLES, name:'土星', intro:'土星到太阳有 14.3 亿公里（9.54 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到土星要多久？', journey:'土星之旅', footer:'⚡光到土星要 1 小时 19 分，🚶步行要 32,649 年！土星有美丽的光环！', defSpeed: 1_000_000_000 },
+    uranus: { dist: URANUS_DISTANCE, vehicles: URANUS_VEHICLES, name:'天王星', intro:'天王星到太阳有 28.7 亿公里（19.19 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到天王星要多久？', journey:'天王星之旅', footer:'⚡光到天王星要 2 小时 40 分，🚶步行要 65,718 年！天王星真的超级远！', defSpeed: 1_000_000_000 },
+    neptune:{ dist: NEPTUNE_DISTANCE, vehicles: NEPTUNE_VEHICLES, name:'海王星', intro:'海王星到太阳有 45.1 亿公里（30.07 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到海王星要多久？', journey:'海王星之旅', footer:'⚡光到海王星要 4 小时 10 分，🚶步行要 102,911 年！海王星是最远的大行星！', defSpeed: 1_000_000_000 },
+    pluto:  { dist: PLUTO_DISTANCE, vehicles: PLUTO_VEHICLES, name:'冥王星', intro:'冥王星到太阳有 59.2 亿公里（39.48 AU）！<br>坐不同的交通工具出发，要多久才能到呢？点击赛道查看旅程故事！', subtitle:'从太阳到冥王星要多久？', journey:'冥王星之旅', footer:'⚡光到冥王星要 5 小时 29 分，🚶步行要 135,126 年！冥王星是太阳系最远的成员！', defSpeed: 10_000_000_000 },
+};
+function getVehicles() { return PLANET_CFG[currentTarget].vehicles; }
+
+// ============ DOM 引用 ============
+const tracksEl = document.getElementById('tracks');
+const timerEl = document.getElementById('timer');
+const actionArea = document.getElementById('actionArea');
+const finishEl = document.getElementById('finish');
+const speedHintEl = document.getElementById('speedHint');
+
+// ============ Tab 切换 ============
+function switchTarget(target) {
+    if (currentTarget === target) return;
+    const cfg = PLANET_CFG[target];
+    if (!cfg) return;
+    currentTarget = target;
+    sunDistance = cfg.dist;
+
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.target === target));
+
+    raceState = 'idle'; simSeconds = 0; lastTs = null; rankCounter = 0;
+    timerEl.textContent = '0 秒';
+    finishEl.classList.remove('show');
+
+    tracksEl.innerHTML = '';
+    expandedCard = null;
+    Object.keys(vStates).forEach(k => delete vStates[k]);
+    cfg.vehicles.forEach(v => {
+        vStates[v.id] = { arrived: false, rank: 0 };
+        buildTrack(v);
+    });
+    showIdleBtns();
+
+    document.getElementById('introText').innerHTML = cfg.intro;
+    document.getElementById('subtitleText').textContent = cfg.subtitle;
+    document.getElementById('exploreLink').style.display = (target === 'earth') ? '' : 'none';
+
+    speedMul = cfg.defSpeed;
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.speed) === cfg.defSpeed));
+    speedHintEl.textContent = SPEED_HINTS[cfg.defSpeed] || '';
+
+    if (window.updateScene3D) window.updateScene3D(target);
+}
+
+// ============ 初始化 ============
+function init() {
+    getVehicles().forEach(v => {
+        vStates[v.id] = { arrived: false, rank: 0 };
+        buildTrack(v);
+    });
+    setupSpeedBtns();
+    document.getElementById('startBtn').addEventListener('click', startRace);
+    createStars();
+}
+
+function buildTrack(v) {
+    const el = document.createElement('div');
+    el.className = 'track';
+    el.dataset.id = v.id;
+    el.style.setProperty('--tc', v.color);
+
+    const totalTime = formatTime(sunDistance / v.speedKmH * 3600);
+    const journeyName = PLANET_CFG[currentTarget].journey;
+
+    el.innerHTML = `
+        <div class="track-main">
+            <div class="track-info">
+                <span class="track-icon">${v.icon}</span>
+                <div>
+                    <div class="track-name">${v.name}</div>
+                    <div class="track-speed">${v.speedDisplay}</div>
+                </div>
+            </div>
+            <div class="track-bar-wrap">
+                <div class="track-bar-fill" data-fill style="background:${v.color};width:0%"></div>
+            </div>
+            <div class="track-status" data-status>${totalTime}</div>
+        </div>
+        <div class="arrival-banner" data-banner>${v.arrivalMsg}</div>
+        <div class="journey-card" data-card>
+            <div class="journey-inner">
+                <div class="journey-title">${v.icon} ${v.name}的${journeyName}（${v.speedDisplay}）</div>
+                ${v.milestones.map(m => `
+                    <div class="milestone">
+                        <div class="milestone-time">${m.time}</div>
+                        <div class="milestone-body">
+                            <div class="milestone-label">📍 ${m.label}（${m.dist}）</div>
+                            <div class="milestone-fun">${m.fun}</div>
+                        </div>
+                    </div>
+                `).join('')}
+                <div class="journey-fact">💡 ${v.funFact}</div>
+            </div>
+        </div>
+    `;
+
+    el.addEventListener('click', (e) => {
+        if (e.target.closest('.speed-btn') || e.target.closest('.btn-primary') || e.target.closest('.btn-secondary')) return;
+        toggleCard(v.id, el);
+    });
+
+    tracksEl.appendChild(el);
+    vStates[v.id].el = el;
+}
+
+function toggleCard(id, el) {
+    const card = el.querySelector('[data-card]');
+    if (expandedCard === id) {
+        card.classList.remove('expanded');
+        expandedCard = null;
+    } else {
+        if (expandedCard) {
+            const prev = document.querySelector(`.track[data-id="${expandedCard}"] [data-card]`);
+            if (prev) prev.classList.remove('expanded');
+        }
+        card.classList.add('expanded');
+        expandedCard = id;
+    }
+}
+
+// ============ 速度按钮 ============
+function setupSpeedBtns() {
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            speedMul = parseInt(btn.dataset.speed);
+            speedHintEl.textContent = SPEED_HINTS[speedMul] || '';
+        });
+    });
+}
+
+// ============ 比赛控制 ============
+function startRace() {
+    raceState = 'running';
+    lastTs = null;
+    document.querySelectorAll('[data-fill]').forEach(f => f.classList.add('animate'));
+    showRunningBtns();
+    requestAnimationFrame(animate);
+}
+
+function pauseRace() { raceState = 'paused'; showPausedBtns(); }
+
+function resumeRace() {
+    raceState = 'running'; lastTs = null;
+    showRunningBtns(); requestAnimationFrame(animate);
+}
+
+function resetRace() {
+    raceState = 'idle'; simSeconds = 0; lastTs = null; rankCounter = 0;
+    getVehicles().forEach(v => {
+        const s = vStates[v.id];
+        if (!s || !s.el) return;
+        s.arrived = false; s.rank = 0;
+        s.el.classList.remove('arrived');
+        s.el.querySelector('[data-fill]').style.width = '0%';
+        s.el.querySelector('[data-fill]').classList.remove('animate');
+        s.el.querySelector('[data-status]').textContent = formatTime(sunDistance / v.speedKmH * 3600);
+        s.el.querySelector('[data-status]').classList.remove('done');
+        s.el.querySelector('[data-banner]').classList.remove('show');
+    });
+    timerEl.textContent = '0 秒';
+    finishEl.classList.remove('show');
+    showIdleBtns();
+}
+
+// ============ 按钮切换 ============
+function showIdleBtns() { actionArea.innerHTML = '<button class="btn-primary pulse" onclick="startRace()">🏁 出发！</button>'; }
+function showRunningBtns() {
+    actionArea.innerHTML = '<button class="btn-secondary" onclick="pauseRace()">⏸️ 暂停</button> <button class="btn-secondary" onclick="resetRace()">🔄 重来</button>';
+}
+function showPausedBtns() {
+    actionArea.innerHTML = '<button class="btn-secondary" onclick="resumeRace()">▶️ 继续</button> <button class="btn-secondary" onclick="resetRace()">🔄 重来</button>';
+}
+function showFinishedBtns() { actionArea.innerHTML = '<button class="btn-primary" onclick="resetRace()">🔄 再来一次！</button>'; }
+
+// ============ 动画引擎 ============
+function animate(ts) {
+    if (raceState !== 'running') return;
+    if (lastTs === null) lastTs = ts;
+    const dt = Math.min(ts - lastTs, 100);
+    lastTs = ts;
+    simSeconds += (dt / 1000) * speedMul;
+
+    let allDone = true;
+    const vehicles = getVehicles();
+
+    vehicles.forEach(v => {
+        const s = vStates[v.id];
+        if (s.arrived) return;
+        const dist = v.speedKmH * (simSeconds / 3600);
+        const progress = Math.min(1, dist / sunDistance);
+        s.el.querySelector('[data-fill]').style.width = (progress * 100) + '%';
+        if (progress >= 1) {
+            s.arrived = true; rankCounter++; s.rank = rankCounter;
+            onArrived(v, s);
+        } else { allDone = false; }
+    });
+
+    if (allDone) { vehicles.forEach(v => { if (!vStates[v.id].arrived) allDone = false; }); }
+    timerEl.textContent = formatTime(simSeconds);
+
+    if (allDone) { raceState = 'finished'; onAllDone(); }
+    else { requestAnimationFrame(animate); }
+}
+
+function onArrived(v, s) {
+    s.el.classList.add('arrived');
+    const statusEl = s.el.querySelector('[data-status]');
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣'];
+    statusEl.textContent = `${medals[s.rank-1]} 第${s.rank}名`;
+    statusEl.classList.add('done');
+    s.el.querySelector('[data-banner]').classList.add('show');
+}
+
+function onAllDone() {
+    showFinishedBtns();
+    const vehicles = getVehicles();
+    const sorted = vehicles.slice().sort((a, b) => vStates[a.id].rank - vStates[b.id].rank);
+    const medals = ['🥇','🥈','🥉'];
+    let html = '';
+    sorted.forEach((v, i) => {
+        const medal = i < 3 ? medals[i] : `${i+1}.`;
+        html += `<div>${medal} ${v.icon} ${v.name} — ${formatTime(sunDistance / v.speedKmH * 3600)}</div>`;
+    });
+    document.getElementById('finishRanks').innerHTML = html;
+    document.getElementById('finishFooter').textContent = PLANET_CFG[currentTarget].footer;
+    finishEl.classList.add('show');
+}
+
+// ============ 时间格式化 ============
+function formatTime(seconds) {
+    if (seconds < 1) return '不到1秒';
+    if (seconds < 60) return Math.floor(seconds) + '秒';
+    if (seconds < 3600) {
+        const m = Math.floor(seconds / 60), s = Math.floor(seconds % 60);
+        return s > 0 ? `${m}分${s}秒` : `${m}分钟`;
+    }
+    if (seconds < 86400) {
+        const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60);
+        return m > 0 ? `${h}小时${m}分` : `${h}小时`;
+    }
+    const days = seconds / 86400;
+    if (days < 30) return Math.floor(days) + '天';
+    if (days < 365.25) return Math.floor(days / 30.44) + '个月';
+    const years = seconds / (86400 * 365.25);
+    if (years < 10) return years.toFixed(1) + '年';
+    if (years < 1000) return Math.round(years) + '年';
+    return Math.round(years).toLocaleString() + '年';
+}
+
+// ============ 星空背景 ============
+function createStars() {
+    const el = document.getElementById('stars');
+    for (let i = 0; i < 100; i++) {
+        const s = document.createElement('div'); s.className = 'star';
+        const size = Math.random() * 2.5 + 0.5;
+        s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${2+Math.random()*3}s;`;
+        el.appendChild(s);
+    }
+}
+
+// ============ 启动 ============
+init();
+</script>
+</body>
+</html>

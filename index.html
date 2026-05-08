@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嘟嘟的学习乐园</title>
+    <link rel="preconnect" href="https://fonts.loli.net">
+    <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a2a 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: #fff;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 36px 24px 72px;
+        }
+
+        .header {
+            text-align: center;
+            max-width: 880px;
+            margin: 0 auto 40px;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00d9ff, #ffd93d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .themes {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 24px;
+            align-items: start;
+        }
+
+        .theme-section {
+            grid-column: span 4;
+            background: rgba(8, 14, 38, 0.62);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.24);
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-space,
+        .theme-explorer {
+            grid-column: span 6;
+        }
+
+        .theme-section h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+        }
+
+        .theme-section h2 .emoji {
+            margin-right: 8px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            display: block;
+            text-decoration: none;
+            color: #fff;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            padding: 20px;
+            min-height: 168px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.25);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        .card .icon {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .card .title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .card .desc {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
+        }
+
+        /* 各主题颜色 */
+        .theme-space .card:hover { border-color: #00d9ff; }
+        .theme-explorer .card:hover { border-color: #8cf7d5; }
+        .theme-math .card:hover { border-color: #ffd93d; }
+        .theme-puzzle .card:hover { border-color: #26de81; }
+        .theme-eng .card:hover { border-color: #ff6b6b; }
+
+        /* ============ CSS 星球图标 ============ */
+        .planet-icon {
+            display: block;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: visible;
+        }
+
+        /* 太阳 - 金黄色发光效果 */
+        .planet-sun {
+            background: radial-gradient(circle at 35% 35%,
+                #fff8dc 0%,
+                #ffe066 15%,
+                #ffcc00 35%,
+                #ff9900 65%,
+                #e67300 90%);
+            box-shadow:
+                0 0 16px 4px rgba(255, 200, 0, 0.6),
+                0 0 40px 8px rgba(255, 160, 0, 0.3),
+                inset 0 0 12px rgba(255, 255, 255, 0.3);
+            animation: sun-glow 3s ease-in-out infinite alternate;
+        }
+        @keyframes sun-glow {
+            0% { box-shadow: 0 0 16px 4px rgba(255,200,0,0.6), 0 0 40px 8px rgba(255,160,0,0.3), inset 0 0 12px rgba(255,255,255,0.3); }
+            100% { box-shadow: 0 0 22px 6px rgba(255,200,0,0.8), 0 0 50px 12px rgba(255,160,0,0.4), inset 0 0 12px rgba(255,255,255,0.3); }
+        }
+
+        /* 水星 - 灰色岩石质感 */
+        .planet-mercury {
+            background: radial-gradient(circle at 30% 30%,
+                #c8c8c8 0%,
+                #a0a0a0 25%,
+                #808080 50%,
+                #606060 75%,
+                #3a3a3a 100%);
+            box-shadow:
+                inset -8px -4px 12px rgba(0, 0, 0, 0.5),
+                inset 4px 4px 8px rgba(200, 200, 200, 0.15),
+                0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        /* 陨石坑暗示 */
+        .planet-mercury::before {
+            content: '';
+            position: absolute;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(80,80,80,0.6) 0%, transparent 70%);
+            top: 30%; left: 45%;
+        }
+        .planet-mercury::after {
+            content: '';
+            position: absolute;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(70,70,70,0.5) 0%, transparent 70%);
+            top: 55%; left: 28%;
+        }
+
+        /* 金星 - 黄橙色厚大气层 */
+        .planet-venus {
+            background: radial-gradient(circle at 35% 35%,
+                #ffe4a0 0%,
+                #f5c040 20%,
+                #e8a820 40%,
+                #d08c10 60%,
+                #b06800 80%,
+                #8a5000 100%);
+            box-shadow:
+                inset -6px -3px 12px rgba(100, 50, 0, 0.5),
+                inset 3px 3px 8px rgba(255, 230, 180, 0.2),
+                0 0 12px 2px rgba(230, 170, 40, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 大气层涡旋暗示 */
+        .planet-venus::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 50%;
+            background: repeating-conic-gradient(
+                from 20deg,
+                transparent 0deg,
+                rgba(255,220,150,0.08) 15deg,
+                transparent 30deg
+            );
+        }
+
+        /* 地球 - 蓝绿色 */
+        .planet-earth {
+            background: radial-gradient(circle at 30% 30%,
+                #87ceeb 0%,
+                #4a90d9 20%,
+                #2e6db4 35%,
+                #1a5c8a 55%,
+                #0d3b66 80%,
+                #082040 100%);
+            box-shadow:
+                inset -6px -3px 12px rgba(0, 0, 30, 0.5),
+                inset 3px 3px 8px rgba(135, 206, 235, 0.2),
+                0 0 10px 2px rgba(70, 140, 220, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 大陆暗示 */
+        .planet-earth::before {
+            content: '';
+            position: absolute;
+            width: 18px; height: 14px;
+            background: radial-gradient(ellipse, rgba(60,140,60,0.6) 0%, rgba(40,120,40,0.3) 60%, transparent 100%);
+            border-radius: 40% 60% 50% 50%;
+            top: 22%; left: 30%;
+            transform: rotate(-15deg);
+        }
+        .planet-earth::after {
+            content: '';
+            position: absolute;
+            width: 10px; height: 16px;
+            background: radial-gradient(ellipse, rgba(50,130,50,0.5) 0%, rgba(40,110,40,0.2) 60%, transparent 100%);
+            border-radius: 50% 50% 40% 60%;
+            top: 42%; left: 52%;
+            transform: rotate(10deg);
+        }
+
+        /* 月球 - 灰白色带陨石坑 */
+        .planet-moon {
+            background: radial-gradient(circle at 35% 30%,
+                #e8e8e0 0%,
+                #d0d0c8 20%,
+                #b8b8b0 40%,
+                #9a9a92 60%,
+                #787870 80%,
+                #585850 100%);
+            box-shadow:
+                inset -8px -4px 14px rgba(0, 0, 0, 0.45),
+                inset 3px 3px 8px rgba(240, 240, 230, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 陨石坑 */
+        .planet-moon::before {
+            content: '';
+            position: absolute;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100,100,90,0.5) 30%, rgba(140,140,130,0.2) 60%, transparent 80%);
+            top: 25%; left: 40%;
+            box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15);
+        }
+        .planet-moon::after {
+            content: '';
+            position: absolute;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100,100,90,0.4) 30%, rgba(140,140,130,0.15) 60%, transparent 80%);
+            top: 52%; left: 25%;
+            box-shadow: inset 1px 1px 1px rgba(0,0,0,0.1);
+        }
+
+        /* 火星 - 红色/铁锈色 */
+        .planet-mars {
+            background: radial-gradient(circle at 32% 32%,
+                #e8a070 0%,
+                #d07040 20%,
+                #c05030 40%,
+                #a03020 60%,
+                #802818 80%,
+                #501810 100%);
+            box-shadow:
+                inset -7px -3px 12px rgba(40, 0, 0, 0.5),
+                inset 3px 3px 8px rgba(230, 160, 120, 0.15),
+                0 0 8px 1px rgba(200, 80, 40, 0.25),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 极冠暗示 */
+        .planet-mars::before {
+            content: '';
+            position: absolute;
+            width: 14px; height: 6px;
+            background: radial-gradient(ellipse, rgba(230,225,220,0.5) 0%, transparent 80%);
+            border-radius: 50%;
+            top: 5%; left: 34%;
+        }
+
+        /* 木星 - 橙黄条纹 + 大红斑 */
+        .planet-jupiter {
+            background: radial-gradient(circle at 30% 30%,
+                #f0d8a8 0%,
+                #e0c090 15%,
+                #d0a870 30%,
+                #c89860 50%,
+                #a07040 75%,
+                #704828 100%);
+            box-shadow:
+                inset -8px -3px 14px rgba(50, 20, 0, 0.5),
+                inset 3px 3px 8px rgba(240, 216, 168, 0.15),
+                0 0 10px 2px rgba(200, 150, 80, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 条纹效果 */
+        .planet-jupiter::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                linear-gradient(180deg,
+                    transparent 10%,
+                    rgba(180,120,60,0.3) 15%,
+                    transparent 20%,
+                    rgba(160,100,40,0.25) 28%,
+                    transparent 33%,
+                    rgba(200,140,70,0.2) 40%,
+                    transparent 45%,
+                    rgba(170,110,50,0.3) 52%,
+                    transparent 58%,
+                    rgba(190,130,60,0.2) 65%,
+                    transparent 70%,
+                    rgba(160,100,40,0.25) 78%,
+                    transparent 83%,
+                    rgba(180,120,60,0.2) 90%,
+                    transparent 95%);
+        }
+        /* 大红斑暗示 */
+        .planet-jupiter::after {
+            content: '';
+            position: absolute;
+            width: 12px; height: 8px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse, rgba(200,60,30,0.6) 0%, rgba(180,50,20,0.3) 60%, transparent 100%);
+            top: 50%; left: 35%;
+        }
+
+        /* 土星 - 淡黄色带光环 */
+        .planet-saturn {
+            width: 52px;
+            height: 52px;
+            background: transparent;
+            border-radius: 0;
+            overflow: visible;
+            position: relative;
+        }
+        .planet-saturn-body {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 32% 32%,
+                #f5e8c0 0%,
+                #e8d8a0 20%,
+                #d8c480 40%,
+                #c8b068 60%,
+                #a89050 80%,
+                #887040 100%);
+            box-shadow:
+                inset -6px -2px 10px rgba(60, 40, 0, 0.4),
+                inset 2px 2px 6px rgba(245, 232, 192, 0.15);
+            z-index: 2;
+        }
+        /* 条纹 */
+        .planet-saturn-body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(180deg,
+                transparent 15%,
+                rgba(180,150,80,0.2) 22%,
+                transparent 28%,
+                rgba(170,140,70,0.15) 45%,
+                transparent 52%,
+                rgba(180,150,80,0.2) 68%,
+                transparent 75%);
+        }
+        /* 光环 */
+        .planet-saturn-ring {
+            position: absolute;
+            width: 52px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(70deg);
+            border-radius: 50%;
+            border: 3px solid transparent;
+            background: transparent;
+            z-index: 1;
+        }
+        .planet-saturn-ring::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            border: 4px solid rgba(200, 180, 130, 0.5);
+            box-shadow:
+                0 0 0 2px rgba(210, 190, 140, 0.3),
+                0 0 0 6px rgba(190, 170, 120, 0.15);
+        }
+        /* 光环前半 (遮挡球体前面) */
+        .planet-saturn-ring-front {
+            position: absolute;
+            width: 52px;
+            height: 8px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(70deg);
+            border-bottom-left-radius: 50% 100%;
+            border-bottom-right-radius: 50% 100%;
+            border-top: none;
+            z-index: 3;
+            overflow: hidden;
+        }
+        .planet-saturn-ring-front::before {
+            content: '';
+            position: absolute;
+            width: 52px;
+            height: 16px;
+            top: -8px;
+            left: -5px;
+            border-radius: 50%;
+            border: 4px solid rgba(200, 180, 130, 0.5);
+            box-shadow:
+                0 0 0 2px rgba(210, 190, 140, 0.3),
+                0 0 0 6px rgba(190, 170, 120, 0.15);
+        }
+
+        /* 天王星 - 青蓝色冰巨星 */
+        .planet-uranus {
+            background: radial-gradient(circle at 35% 35%,
+                #c8eff4 0%,
+                #a8e6ef 20%,
+                #72d8e0 40%,
+                #4fb8c4 60%,
+                #3a9ea8 80%,
+                #2a8090 100%);
+            box-shadow:
+                inset -6px -3px 12px rgba(0, 40, 50, 0.4),
+                inset 3px 3px 8px rgba(200, 240, 245, 0.2),
+                0 0 10px 2px rgba(114, 216, 224, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .planet-uranus::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(180deg,
+                transparent 15%,
+                rgba(160,230,240,0.1) 30%,
+                transparent 45%,
+                rgba(140,220,230,0.08) 60%,
+                transparent 75%);
+        }
+
+        /* 海王星 - 深蓝色 */
+        .planet-neptune {
+            background: radial-gradient(circle at 32% 32%,
+                #7eb8e0 0%,
+                #4a8cc0 20%,
+                #2868a8 40%,
+                #1a4e8a 60%,
+                #103868 80%,
+                #082448 100%);
+            box-shadow:
+                inset -7px -3px 12px rgba(0, 0, 40, 0.5),
+                inset 3px 3px 8px rgba(126, 184, 224, 0.15),
+                0 0 10px 2px rgba(40, 100, 180, 0.3),
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 大气条纹暗示 */
+        .planet-neptune::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: linear-gradient(180deg,
+                transparent 20%,
+                rgba(100,170,230,0.15) 30%,
+                transparent 40%,
+                rgba(80,150,210,0.1) 55%,
+                transparent 65%,
+                rgba(100,170,230,0.12) 78%,
+                transparent 85%);
+        }
+
+        @media (max-width: 1200px) {
+            .container { max-width: 1080px; }
+            .theme-space,
+            .theme-explorer {
+                grid-column: span 12;
+            }
+            .theme-section {
+                grid-column: span 6;
+            }
+        }
+
+        @media (max-width: 820px) {
+            .themes {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+            .theme-section,
+            .theme-space,
+            .theme-explorer {
+                grid-column: auto;
+                padding: 20px;
+            }
+            .cards {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.8rem; }
+            .cards { grid-template-columns: 1fr; }
+            .container { padding: 24px 16px 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>嘟嘟的学习乐园</h1>
+            <p>探索宇宙 / 玩转数学 / 拼图世界 / 机械奥秘</p>
+        </div>
+
+        <div class="themes">
+            <div class="theme-section theme-space">
+                <h2><span class="emoji">🚀</span>太空天文</h2>
+                <div class="cards">
+                    <a class="card" href="space/solar-system.html">
+                        <span class="icon">🪐</span>
+                        <div class="title">太阳系 3D 探索</div>
+                        <div class="desc">在三维空间中探索八大行星和太阳系</div>
+                    </a>
+                    <a class="card" href="space/galaxy.html">
+                        <span class="icon">🌌</span>
+                        <div class="title">银河系探索</div>
+                        <div class="desc">从太阳系飞向银河系，探索宇宙尺度</div>
+                    </a>
+                    <a class="card" href="space/earth.html">
+                        <span class="icon">🌍</span>
+                        <div class="title">地球的奥秘</div>
+                        <div class="desc">了解地球的自转、公转和四季变化</div>
+                    </a>
+                    <a class="card" href="space/kids.html">
+                        <span class="icon">🚀</span>
+                        <div class="title">嘟嘟号太空探险</div>
+                        <div class="desc">驾驶飞船完成星际任务，收集行星徽章</div>
+                    </a>
+                    <a class="card" href="space/asteroid-impact.html">
+                        <span class="icon">☄️</span>
+                        <div class="title">陨石撞击地球</div>
+                        <div class="desc">模拟陨石撞击，了解陨石的知识</div>
+                    </a>
+                    <a class="card" href="space/space-words.html">
+                        <span class="icon">🌟</span>
+                        <div class="title">太阳系识字乐园</div>
+                        <div class="desc">跟着星球学汉字，同步幼儿园课本154字</div>
+                    </a>
+                    <a class="card" href="space/blackhole.html">
+                        <span class="icon">🕳️</span>
+                        <div class="title">黑洞探索</div>
+                        <div class="desc">走进卡冈图雅，了解黑洞的奥秘</div>
+                    </a>
+                    <a class="card" href="space/sun-distance.html">
+                        <span class="icon">☀️</span>
+                        <div class="title">地日距离大挑战</div>
+                        <div class="desc">太空赛跑！看谁最快到达太阳</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="theme-section theme-explorer">
+                <h2><span class="emoji">🛰️</span>威瓦天阳系-探险家系列</h2>
+                <div class="cards">
+                    <a class="card" href="space/earth-explorer.html">
+                        <span class="icon">🌍</span>
+                        <div class="title">地球探险家</div>
+                        <div class="desc">6大章节闯关，探索蓝色星球、四季变化、生命摇篮</div>
+                    </a>
+                    <a class="card" href="space/moon.html">
+                        <span class="icon">🌙</span>
+                        <div class="title">月球探险家</div>
+                        <div class="desc">6大章节闯关，探索月球引力、登月、陨石坑</div>
+                    </a>
+                    <a class="card" href="space/sun.html">
+                        <span class="icon">☀️</span>
+                        <div class="title">太阳探险家</div>
+                        <div class="desc">6大章节闯关，探索核聚变、太阳黑子、太阳温度</div>
+                    </a>
+                    <a class="card" href="space/mercury.html">
+                        <span class="planet-icon planet-mercury"></span>
+                        <div class="title">水星探险家</div>
+                        <div class="desc">6大章节闯关，探索极端温差、陨石坑、水星之旅</div>
+                    </a>
+                    <a class="card" href="space/venus.html">
+                        <span class="planet-icon planet-venus"></span>
+                        <div class="title">金星探险家</div>
+                        <div class="desc">6大章节闯关，探索超级大气层、最热行星、倒转</div>
+                    </a>
+                    <a class="card" href="space/mars.html">
+                        <span class="planet-icon planet-mars"></span>
+                        <div class="title">火星探险家</div>
+                        <div class="desc">6大章节闯关，探索红色星球、好奇号、寻找水</div>
+                    </a>
+                    <a class="card" href="space/jupiter.html">
+                        <span class="planet-icon planet-jupiter"></span>
+                        <div class="title">木星探险家</div>
+                        <div class="desc">6大章节闯关，探索大红斑、气态巨行星、卫星</div>
+                    </a>
+                    <a class="card" href="space/saturn.html">
+                        <span class="planet-icon planet-saturn"><span class="planet-saturn-ring"></span><span class="planet-saturn-body"></span><span class="planet-saturn-ring-front"></span></span>
+                        <div class="title">土星探险家</div>
+                        <div class="desc">6大章节闯关，探索美丽光环、土卫六、卡西尼号</div>
+                    </a>
+                    <a class="card" href="space/uranus.html">
+                        <span class="planet-icon planet-uranus"></span>
+                        <div class="title">天王星探险家</div>
+                        <div class="desc">6大章节闯关，探索横躺行星、冰巨星、竖着的光环</div>
+                    </a>
+                    <a class="card" href="space/neptune.html">
+                        <span class="planet-icon planet-neptune"></span>
+                        <div class="title">海王星探险家</div>
+                        <div class="desc">6大章节闯关，探索冰巨星、钻石雨、超级风暴</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="theme-section theme-math">
+                <h2><span class="emoji">🔢</span>数学</h2>
+                <div class="cards">
+                    <a class="card" href="math/num.html">
+                        <span class="icon">🧮</span>
+                        <div class="title">十格框加减法</div>
+                        <div class="desc">用十格框学习 10 以内加减法</div>
+                    </a>
+                    <a class="card" href="math/make-ten.html">
+                        <span class="icon">🤝</span>
+                        <div class="title">凑十好朋友</div>
+                        <div class="desc">学习凑十法，快速口算小能手</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="theme-section theme-puzzle">
+                <h2><span class="emoji">🧩</span>地理拼图</h2>
+                <div class="cards">
+                    <a class="card" href="puzzle/china.html">
+                        <span class="icon">🇨🇳</span>
+                        <div class="title">中国省份拼图</div>
+                        <div class="desc">拖拽拼图认识祖国 34 个省级行政区</div>
+                    </a>
+                    <a class="card" href="puzzle/us.html">
+                        <span class="icon">🇺🇸</span>
+                        <div class="title">美国州份拼图</div>
+                        <div class="desc">拖拽拼图认识美国 50 个州</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="theme-section theme-eng">
+                <h2><span class="emoji">⚙️</span>机械工程</h2>
+                <div class="cards">
+                    <a class="card" href="engineering/elevator.html">
+                        <span class="icon">🏗️</span>
+                        <div class="title">乐高电梯模拟</div>
+                        <div class="desc">3D 模拟乐高积木电梯的运行原理</div>
+                    </a>
+                    <a class="card" href="engineering/train-opus46.html">
+                        <span class="icon">🚄</span>
+                        <div class="title">复兴号高铁（去程）</div>
+                        <div class="desc">乘坐G88从北京西到西安北，途经郑州东</div>
+                    </a>
+                    <a class="card" href="engineering/train-g746.html">
+                        <span class="icon">🚅</span>
+                        <div class="title">复兴号高铁（回程）</div>
+                        <div class="desc">乘坐G88从西安北到北京西，一等座16车10F，途经郑州东</div>
+                    </a>
+                    <a class="card" href="engineering/fuxing-explorer.html">
+                        <span class="icon">🚂</span>
+                        <div class="title">复兴号 3D 探索</div>
+                        <div class="desc">360度探索CR400AF复兴号，进入驾驶室查看操控设备</div>
+                    </a>
+                    <a class="card" href="engineering/beijing-water.html">
+                        <span class="icon">💧</span>
+                        <div class="title">北京城市排水系统</div>
+                        <div class="desc">探索地下管网，了解雨水的完整循环旅程</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const starsEl = document.getElementById('stars');
+        for (let i = 0; i < 80; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2.5 + 0.5;
+            s.style.cssText = `
+                width: ${size}px; height: ${size}px;
+                left: ${Math.random() * 100}%;
+                top: ${Math.random() * 100}%;
+                animation-delay: ${Math.random() * 3}s;
+                animation-duration: ${2 + Math.random() * 3}s;
+            `;
+            starsEl.appendChild(s);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>黑洞探索 - 柳嘟嘟的宇宙课堂</title>
+    <link rel="preconnect" href="https://fonts.loli.net">
+    <link rel="preconnect" href="https://fonts.loli.net" crossorigin>
+    <link href="https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --cosmic-dark: #0a0a0f;
+            --nebula-purple: #1a0a2e;
+            --stellar-blue: #16213e;
+            --accent-gold: #f4d03f;
+            --accent-orange: #e67e22;
+            --accent-cyan: #00d4ff;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--cosmic-dark);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            cursor: grab;
+        }
+
+        body.grabbing { cursor: grabbing; }
+
+        /* ============ 加载动画 ============ */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--cosmic-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+
+        .loading-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-blackhole {
+            width: 100px;
+            height: 100px;
+            position: relative;
+        }
+
+        .loading-blackhole .core {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #111 60%, transparent 100%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px 5px rgba(0,0,0,0.8);
+        }
+
+        .loading-blackhole .disk {
+            position: absolute;
+            inset: 0;
+            border: 3px solid transparent;
+            border-top-color: var(--accent-gold);
+            border-right-color: var(--accent-orange);
+            border-radius: 50%;
+            animation: spin-disk 1.2s linear infinite;
+        }
+
+        .loading-blackhole .disk:nth-child(2) {
+            inset: 10px;
+            border-top-color: var(--accent-cyan);
+            border-right-color: rgba(0, 212, 255, 0.3);
+            animation-duration: 1.8s;
+            animation-direction: reverse;
+        }
+
+        @keyframes spin-disk {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 24px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        /* ============ 星空背景 ============ */
+        .stars-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .stars-bg .star {
+            position: absolute;
+            border-radius: 50%;
+            background: #fff;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+
+        /* ============ 吸入粒子 ============ */
+        .particle {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            animation: particle-drift linear infinite;
+        }
+
+        @keyframes particle-drift {
+            0% { opacity: 0; transform: translate(0, 0) scale(1); }
+            20% { opacity: 0.8; }
+            80% { opacity: 0.4; }
+            100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.1); }
+        }
+
+        /* ============ 顶部 Header ============ */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .header > * { pointer-events: auto; }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: radial-gradient(circle, #111 30%, var(--accent-gold) 60%, var(--accent-orange) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 0 25px rgba(244, 208, 63, 0.5);
+            animation: pulse-glow 3s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-gold);
+            border-radius: 50%;
+            animation: spin-disk 3s linear infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 25px rgba(244, 208, 63, 0.4); }
+            50% { box-shadow: 0 0 45px rgba(244, 208, 63, 0.7); }
+        }
+
+        .logo-text h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-labels-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            padding: 8px 14px;
+            border-radius: 20px;
+            color: var(--text-primary);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toggle-labels-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-cyan);
+        }
+
+        .toggle-labels-btn.active {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-cyan);
+        }
+
+        /* ============ 图片查看器 ============ */
+        .viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .viewer-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+            transition: none;
+        }
+
+        .viewer-content.smooth {
+            transition: transform 0.3s ease;
+        }
+
+        .viewer-content img {
+            display: block;
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 8px;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        /* ============ SVG 标注层 ============ */
+        .annotations-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .annotation {
+            position: absolute;
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .anno-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: anno-pulse 2s ease-in-out infinite;
+            position: relative;
+        }
+
+        .anno-dot::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border: 1px solid var(--accent-cyan);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: anno-ring 2s ease-in-out infinite;
+        }
+
+        @keyframes anno-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        @keyframes anno-ring {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .anno-label {
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 8px 14px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(-50%) translateX(-5px);
+            pointer-events: none;
+        }
+
+        .annotation:hover .anno-label,
+        .annotation.active .anno-label {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+        }
+
+        .anno-label .anno-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 2px;
+        }
+
+        .anno-label .anno-desc {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            max-width: 200px;
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .anno-line {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            width: 12px;
+            height: 1px;
+            background: var(--accent-cyan);
+            opacity: 0.5;
+        }
+
+        .annotations-hidden .annotation { display: none; }
+
+        /* ============ 吸积盘 CSS 粒子动画 ============ */
+        .fx-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        /* 轨道容器：一个旋转的圆，scaleY 压扁成椭圆 */
+        .orbit-ring {
+            position: absolute;
+            border-radius: 50%;
+            animation: orbit-spin var(--dur) linear infinite;
+            animation-delay: var(--delay, 0s);
+        }
+
+        @keyframes orbit-spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* 轨道上的发光粒子 */
+        .orbit-dot {
+            position: absolute;
+            border-radius: 50%;
+            /* 反向 scaleY 让粒子保持圆形而非被压扁 */
+            transform: translate(-50%, -50%) scaleY(var(--counter-scale, 1));
+        }
+
+        /* 脉冲闪烁粒子 */
+        .glow-dot {
+            position: absolute;
+            border-radius: 50%;
+            animation: glow-pulse var(--glow-dur, 3s) ease-in-out infinite alternate;
+            animation-delay: var(--glow-delay, 0s);
+        }
+
+        @keyframes glow-pulse {
+            0% { opacity: 0.05; transform: translate(-50%, -50%) scale(0.8); }
+            100% { opacity: var(--glow-max, 0.5); transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        /* ============ 左侧知识面板 ============ */
+        .panel {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            bottom: 80px;
+            width: 340px;
+            z-index: 200;
+            background: rgba(10, 10, 20, 0.88);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            border-radius: 0 16px 16px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            transform: translateX(0);
+            transition: transform 0.35s ease;
+            padding: 16px;
+        }
+
+        .panel.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .panel-toggle {
+            position: fixed;
+            top: 50%;
+            left: 340px;
+            transform: translateY(-50%);
+            z-index: 201;
+            width: 28px;
+            height: 60px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: all 0.35s ease;
+        }
+
+        .panel.collapsed + .panel-toggle {
+            left: 0;
+        }
+
+        .panel-toggle:hover {
+            background: rgba(30, 30, 50, 0.9);
+            color: var(--accent-cyan);
+        }
+
+        .panel-section {
+            margin-bottom: 12px;
+        }
+
+        .panel-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .panel-section-header:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--accent-cyan);
+        }
+
+        .panel-section-header .sec-icon { font-size: 1.2rem; }
+        .panel-section-header .sec-title {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .panel-section-header .sec-arrow {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            transition: transform 0.3s ease;
+        }
+
+        .panel-section.open .sec-arrow {
+            transform: rotate(180deg);
+        }
+
+        .panel-section-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease;
+        }
+
+        .panel-section.open .panel-section-body {
+            max-height: 1000px;
+        }
+
+        .panel-section-content {
+            padding: 12px 8px;
+            font-size: 0.82rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .panel-section-content strong {
+            color: var(--accent-gold);
+        }
+
+        /* 结构卡片 */
+        .structure-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .structure-card:hover,
+        .structure-card.active {
+            background: rgba(0, 212, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.3);
+        }
+
+        .structure-card .sc-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .structure-card .sc-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 2px;
+        }
+
+        .structure-card .sc-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* 时间线 */
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--accent-gold), var(--accent-orange), #ff4444);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 10px 0 10px 16px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            border: 2px solid var(--cosmic-dark);
+        }
+
+        .timeline-item:nth-child(2)::before { background: var(--accent-orange); }
+        .timeline-item:nth-child(3)::before { background: #ff6b6b; }
+        .timeline-item:nth-child(4)::before { background: #333; box-shadow: 0 0 8px rgba(0,0,0,0.8); }
+
+        .timeline-item .tl-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+        }
+
+        .timeline-item .tl-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* 翻转卡片 */
+        .flip-card {
+            perspective: 600px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            min-height: 70px;
+            transition: transform 0.5s ease;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-front, .flip-back {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .flip-front {
+            background: rgba(244, 208, 63, 0.08);
+            border: 1px solid rgba(244, 208, 63, 0.2);
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .flip-front::after {
+            content: '点击揭晓 →';
+            position: absolute;
+            right: 12px;
+            bottom: 8px;
+            font-size: 0.65rem;
+            color: rgba(244, 208, 63, 0.4);
+            font-weight: 400;
+        }
+
+        .flip-back {
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            color: var(--text-secondary);
+            transform: rotateY(180deg);
+        }
+
+        /* ============ 底部图片切换 ============ */
+        .image-switcher {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: flex;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            overflow: hidden;
+        }
+
+        .img-switch-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .img-switch-btn.active {
+            background: linear-gradient(135deg, rgba(244, 208, 63, 0.2), rgba(230, 126, 34, 0.2));
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .img-switch-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        /* ============ 缩放控制 ============ */
+        .zoom-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+
+        .zoom-btn:hover {
+            background: rgba(30, 30, 50, 0.9);
+            border-color: var(--accent-cyan);
+        }
+
+        .zoom-level {
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            padding: 2px 0;
+        }
+
+        /* ============ 首页链接 ============ */
+        .home-link {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .home-link:hover {
+            background: rgba(30, 30, 50, 0.9);
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+        }
+
+        /* ============ 滚动条 ============ */
+        .panel::-webkit-scrollbar { width: 4px; }
+        .panel::-webkit-scrollbar-track { background: transparent; }
+        .panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+
+        /* ============ 移动端适配 ============ */
+        @media (max-width: 768px) {
+            .header { padding: 12px 16px; }
+            .logo-icon { width: 36px; height: 36px; font-size: 16px; }
+            .logo-text h1 { font-size: 1rem; }
+            .logo-text p { font-size: 0.65rem; }
+
+            .panel {
+                width: 280px;
+                top: 64px;
+                bottom: 70px;
+            }
+
+            .panel-toggle {
+                left: 280px;
+            }
+
+            .panel.collapsed + .panel-toggle {
+                left: 0;
+            }
+
+            .image-switcher {
+                bottom: 16px;
+            }
+
+            .img-switch-btn {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+            }
+
+            .zoom-controls { bottom: 16px; right: 16px; }
+            .zoom-btn { width: 36px; height: 36px; font-size: 1rem; }
+
+            .home-link { bottom: 16px; left: 16px; padding: 8px 12px; font-size: 0.75rem; }
+
+            .anno-label {
+                max-width: 160px;
+            }
+
+            .anno-label .anno-desc {
+                max-width: 140px;
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .panel { width: 260px; }
+            .panel-toggle { left: 260px; }
+            .panel.collapsed + .panel-toggle { left: 0; }
+            .logo-text p { display: none; }
+            .toggle-labels-btn span:not(.tl-icon) { display: none; }
+            .toggle-labels-btn { padding: 8px 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-blackhole">
+            <div class="disk"></div>
+            <div class="disk"></div>
+            <div class="core"></div>
+        </div>
+        <div class="loading-text">正在靠近黑洞...</div>
+    </div>
+
+    <!-- 星空背景 -->
+    <div class="stars-bg" id="starsBg"></div>
+
+    <!-- 吸入粒子 -->
+    <div id="particles"></div>
+
+    <!-- 顶部 -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🕳️</div>
+            <div class="logo-text">
+                <h1>BLACK HOLE</h1>
+                <p>柳嘟嘟的宇宙课堂</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="toggle-labels-btn active" id="toggleLabelsBtn" onclick="toggleAnnotations()">
+                <span class="tl-icon">🏷️</span>
+                <span>标注</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 图片查看器 -->
+    <div class="viewer" id="viewer">
+        <div class="viewer-content" id="viewerContent">
+            <img id="bhImage" src="1.jpeg" alt="卡冈图雅黑洞" draggable="false">
+            <!-- 粒子动画层（纯 CSS，零 Canvas 开销） -->
+            <div class="fx-layer" id="fxLayer"></div>
+            <!-- 标注层 -->
+            <div class="annotations-layer" id="annotationsLayer">
+                <!-- 标注由 JS 生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 知识面板 -->
+    <div class="panel collapsed" id="panel">
+        <!-- 板块1: 黑洞是什么 -->
+        <div class="panel-section open" data-section="intro">
+            <div class="panel-section-header" onclick="toggleSection(this)">
+                <span class="sec-icon">🌌</span>
+                <span class="sec-title">黑洞是什么？</span>
+                <span class="sec-arrow">▼</span>
+            </div>
+            <div class="panel-section-body">
+                <div class="panel-section-content">
+                    想象一下，如果把<strong>整个地球</strong>压缩成一颗<strong>弹珠</strong>那么小，它的引力就会大到连<strong>光</strong>都跑不出去——这就是黑洞！
+                    <br><br>
+                    黑洞不是一个"洞"，而是一个<strong>超级重</strong>的天体。它的引力太强了，任何东西靠得太近都会被吸进去，永远回不来。
+                    <br><br>
+                    电影《星际穿越》里的<strong>卡冈图雅</strong>就是一个超大质量黑洞，它的质量是太阳的<strong>1亿倍</strong>！
+                </div>
+            </div>
+        </div>
+
+        <!-- 板块2: 黑洞结构 -->
+        <div class="panel-section" data-section="structure">
+            <div class="panel-section-header" onclick="toggleSection(this)">
+                <span class="sec-icon">🔬</span>
+                <span class="sec-title">黑洞结构</span>
+                <span class="sec-arrow">▼</span>
+            </div>
+            <div class="panel-section-body">
+                <div class="panel-section-content">
+                    <div class="structure-card" data-anno="singularity" onclick="highlightAnno('singularity')">
+                        <div class="sc-dot" style="background:#fff"></div>
+                        <div>
+                            <div class="sc-name">奇点</div>
+                            <div class="sc-desc">黑洞最中心，所有质量被压缩到无限小的一个点</div>
+                        </div>
+                    </div>
+                    <div class="structure-card" data-anno="event-horizon" onclick="highlightAnno('event-horizon')">
+                        <div class="sc-dot" style="background:#ff4444"></div>
+                        <div>
+                            <div class="sc-name">事件视界</div>
+                            <div class="sc-desc">"不可返回线"——越过就回不来了，连光也不行</div>
+                        </div>
+                    </div>
+                    <div class="structure-card" data-anno="photon-ring" onclick="highlightAnno('photon-ring')">
+                        <div class="sc-dot" style="background:var(--accent-gold)"></div>
+                        <div>
+                            <div class="sc-name">光子环</div>
+                            <div class="sc-desc">光绕着黑洞转圈形成的明亮光环</div>
+                        </div>
+                    </div>
+                    <div class="structure-card" data-anno="accretion-disk" onclick="highlightAnno('accretion-disk')">
+                        <div class="sc-dot" style="background:var(--accent-orange)"></div>
+                        <div>
+                            <div class="sc-name">吸积盘</div>
+                            <div class="sc-desc">被吸入的物质旋转形成的超高温盘</div>
+                        </div>
+                    </div>
+                    <div class="structure-card" data-anno="gravitational-lensing" onclick="highlightAnno('gravitational-lensing')">
+                        <div class="sc-dot" style="background:var(--accent-cyan)"></div>
+                        <div>
+                            <div class="sc-name">引力透镜</div>
+                            <div class="sc-desc">黑洞像放大镜一样弯曲背后的光线</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 板块3: 黑洞形成 -->
+        <div class="panel-section" data-section="formation">
+            <div class="panel-section-header" onclick="toggleSection(this)">
+                <span class="sec-icon">⭐</span>
+                <span class="sec-title">黑洞怎么形成的？</span>
+                <span class="sec-arrow">▼</span>
+            </div>
+            <div class="panel-section-body">
+                <div class="panel-section-content">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="tl-title">🌟 大恒星诞生</div>
+                            <div class="tl-desc">一颗比太阳重 <strong>25 倍以上</strong>的巨大恒星在宇宙中诞生，燃烧着核燃料，发出耀眼的光芒</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="tl-title">🔥 燃料耗尽</div>
+                            <div class="tl-desc">几百万年后，恒星把燃料烧完了。就像<strong>篝火熄灭</strong>一样，它再也支撑不住自己巨大的身体了</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="tl-title">💥 超新星爆炸</div>
+                            <div class="tl-desc">恒星外层发生剧烈爆炸——这就是<strong>超新星</strong>！亮度超过整个星系，是宇宙中最壮观的烟花</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="tl-title">🕳️ 黑洞诞生</div>
+                            <div class="tl-desc">爆炸后，核心在自身引力下<strong>无限坍缩</strong>，变得越来越小、越来越重，最终形成黑洞</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 板块4: 趣味问答 -->
+        <div class="panel-section" data-section="quiz">
+            <div class="panel-section-header" onclick="toggleSection(this)">
+                <span class="sec-icon">❓</span>
+                <span class="sec-title">趣味问答</span>
+                <span class="sec-arrow">▼</span>
+            </div>
+            <div class="panel-section-body">
+                <div class="panel-section-content">
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-front">掉进黑洞会怎样？</div>
+                            <div class="flip-back">你会被拉成意大利面！科学家叫它<strong>"面条化效应"</strong>——因为脚比头更靠近黑洞，受到的引力更强，身体会被拉得像面条一样长！</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-front">黑洞会把宇宙吸光吗？</div>
+                            <div class="flip-back">不会！黑洞的引力只在<strong>靠近</strong>的时候才很强。如果太阳变成黑洞，地球的轨道不会变——只是会变得很冷很黑！</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-front">黑洞里面的时间会怎样？</div>
+                            <div class="flip-back">靠近黑洞，<strong>时间会变慢</strong>！在《星际穿越》里，主角在黑洞旁边待了几个小时，地球上已经过了<strong>23年</strong>！</div>
+                        </div>
+                    </div>
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-front">我们能看到黑洞吗？</div>
+                            <div class="flip-back">2019年，科学家第一次拍到了黑洞的照片！他们用了<strong>全世界8台望远镜</strong>组成一个"地球大小"的望远镜才做到的！</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-toggle" id="panelToggle" onclick="togglePanel()">◀</div>
+
+    <!-- 底部图片切换 -->
+    <div class="image-switcher">
+        <button class="img-switch-btn active" data-img="1" onclick="switchImage('1')">金色卡冈图雅</button>
+        <button class="img-switch-btn" data-img="2" onclick="switchImage('2')">星际穿越版</button>
+        <a class="img-switch-btn" href="blackhole-3d.html" style="text-decoration:none;">🌀 3D 交互版</a>
+    </div>
+
+    <!-- 缩放控制 -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()" title="放大">+</button>
+        <div class="zoom-level" id="zoomLevel">1.0x</div>
+        <button class="zoom-btn" onclick="zoomOut()" title="缩小">−</button>
+        <button class="zoom-btn" onclick="zoomReset()" title="重置" style="font-size:0.7rem;">↺</button>
+    </div>
+
+    <!-- 首页链接 -->
+    <a class="home-link" href="../index.html">🏠 学习乐园</a>
+
+    <script>
+    // ============ 配置 ============
+    const IMAGES = {
+        '1': { src: '1.jpeg', name: '金色卡冈图雅' },
+        '2': { src: '2.png', name: '星际穿越版' }
+    };
+
+    const ANNOTATIONS = [
+        {
+            id: 'singularity',
+            name: '奇点',
+            desc: '黑洞最中心，所有质量被压缩到无限小的一个点',
+            color: '#ffffff',
+            // 百分比坐标（相对图片尺寸）
+            positions: {
+                '1': { x: 50, y: 50 },
+                '2': { x: 50, y: 50 }
+            }
+        },
+        {
+            id: 'event-horizon',
+            name: '事件视界',
+            desc: '"不可返回线"——越过就回不来了',
+            color: '#ff4444',
+            positions: {
+                '1': { x: 50, y: 35 },
+                '2': { x: 50, y: 35 }
+            }
+        },
+        {
+            id: 'photon-ring',
+            name: '光子环',
+            desc: '光绕着黑洞转圈形成的明亮光环',
+            color: '#f4d03f',
+            positions: {
+                '1': { x: 35, y: 42 },
+                '2': { x: 35, y: 42 }
+            }
+        },
+        {
+            id: 'accretion-disk',
+            name: '吸积盘',
+            desc: '被吸入的物质旋转形成的超高温盘',
+            color: '#e67e22',
+            positions: {
+                '1': { x: 22, y: 52 },
+                '2': { x: 22, y: 52 }
+            }
+        },
+        {
+            id: 'gravitational-lensing',
+            name: '引力透镜',
+            desc: '弯曲的光线让我们看到黑洞背后的景象',
+            color: '#00d4ff',
+            positions: {
+                '1': { x: 68, y: 30 },
+                '2': { x: 68, y: 30 }
+            }
+        }
+    ];
+
+    // ============ 状态 ============
+    let currentImage = '1';
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    const MIN_SCALE = 0.5;
+    const MAX_SCALE = 5;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let annotationsVisible = true;
+    let image2Loaded = false;
+    let imageNaturalW = 0, imageNaturalH = 0;
+
+    // DOM
+    const viewer = document.getElementById('viewer');
+    const viewerContent = document.getElementById('viewerContent');
+    const bhImage = document.getElementById('bhImage');
+    const annotationsLayer = document.getElementById('annotationsLayer');
+    const zoomLevelEl = document.getElementById('zoomLevel');
+    const panel = document.getElementById('panel');
+    const panelToggle = document.getElementById('panelToggle');
+    const loading = document.getElementById('loading');
+
+    // ============ 初始化 ============
+    function init() {
+        createStars();
+        createParticles();
+        createAnnotations();
+        setupEvents();
+
+        bhImage.onload = function() {
+            imageNaturalW = bhImage.naturalWidth;
+            imageNaturalH = bhImage.naturalHeight;
+            resetView();
+            loading.classList.add('fade-out');
+            setTimeout(() => loading.style.display = 'none', 600);
+        };
+
+        if (bhImage.complete && bhImage.naturalWidth > 0) {
+            imageNaturalW = bhImage.naturalWidth;
+            imageNaturalH = bhImage.naturalHeight;
+            resetView();
+            loading.classList.add('fade-out');
+            setTimeout(() => loading.style.display = 'none', 600);
+        }
+    }
+
+    // ============ 星空 ============
+    function createStars() {
+        const container = document.getElementById('starsBg');
+        for (let i = 0; i < 100; i++) {
+            const s = document.createElement('div');
+            s.className = 'star';
+            const size = Math.random() * 2.5 + 0.5;
+            s.style.cssText = `
+                width:${size}px;height:${size}px;
+                left:${Math.random()*100}%;top:${Math.random()*100}%;
+                animation-delay:${Math.random()*3}s;
+                animation-duration:${2+Math.random()*3}s;
+            `;
+            container.appendChild(s);
+        }
+    }
+
+    // ============ 吸入粒子 ============
+    function createParticles() {
+        const container = document.getElementById('particles');
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+
+        for (let i = 0; i < 18; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+
+            // 随机从边缘出发
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.max(window.innerWidth, window.innerHeight) * 0.6;
+            const startX = cx + Math.cos(angle) * dist;
+            const startY = cy + Math.sin(angle) * dist;
+            const dx = cx - startX;
+            const dy = cy - startY;
+
+            const size = 1 + Math.random() * 3;
+            const duration = 6 + Math.random() * 8;
+            const colors = ['#f4d03f', '#e67e22', '#00d4ff', '#ff6b6b', '#fff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            p.style.cssText = `
+                left:${startX}px;top:${startY}px;
+                width:${size}px;height:${size}px;
+                background:${color};
+                --dx:${dx}px;--dy:${dy}px;
+                animation-duration:${duration}s;
+                animation-delay:${Math.random()*duration}s;
+            `;
+            container.appendChild(p);
+        }
+    }
+
+    // ============ 标注 ============
+    function createAnnotations() {
+        annotationsLayer.innerHTML = '';
+        ANNOTATIONS.forEach(a => {
+            const pos = a.positions[currentImage];
+            const el = document.createElement('div');
+            el.className = 'annotation';
+            el.id = 'anno-' + a.id;
+            el.style.left = pos.x + '%';
+            el.style.top = pos.y + '%';
+            el.style.transform = 'translate(-8px, -8px)';
+
+            el.innerHTML = `
+                <div class="anno-dot" style="background:${a.color};box-shadow:0 0 10px ${a.color}"></div>
+                <div class="anno-line" style="background:${a.color}"></div>
+                <div class="anno-label">
+                    <div class="anno-title" style="color:${a.color}">${a.name}</div>
+                    <div class="anno-desc">${a.desc}</div>
+                </div>
+            `;
+            annotationsLayer.appendChild(el);
+        });
+    }
+
+    function updateAnnotationPositions() {
+        ANNOTATIONS.forEach(a => {
+            const pos = a.positions[currentImage];
+            const el = document.getElementById('anno-' + a.id);
+            if (el) {
+                el.style.left = pos.x + '%';
+                el.style.top = pos.y + '%';
+            }
+        });
+    }
+
+    // ============ 视图控制 ============
+    function updateTransform() {
+        viewerContent.style.transform =
+            `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        zoomLevelEl.textContent = scale.toFixed(1) + 'x';
+    }
+
+    function resetView() {
+        scale = 1;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        // 等待图片渲染完成再获取尺寸
+        requestAnimationFrame(() => {
+            const imgW = bhImage.offsetWidth || bhImage.clientWidth;
+            const imgH = bhImage.offsetHeight || bhImage.clientHeight;
+            translateX = (vw - imgW) / 2;
+            translateY = (vh - imgH) / 2;
+            viewerContent.classList.add('smooth');
+            updateTransform();
+            setTimeout(() => viewerContent.classList.remove('smooth'), 300);
+        });
+    }
+
+    function zoomToPoint(cx, cy, factor) {
+        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor));
+        const ratio = newScale / scale;
+        translateX = cx - (cx - translateX) * ratio;
+        translateY = cy - (cy - translateY) * ratio;
+        scale = newScale;
+        updateTransform();
+    }
+
+    function zoomIn() {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        viewerContent.classList.add('smooth');
+        zoomToPoint(cx, cy, 1.3);
+        setTimeout(() => viewerContent.classList.remove('smooth'), 300);
+    }
+
+    function zoomOut() {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        viewerContent.classList.add('smooth');
+        zoomToPoint(cx, cy, 1 / 1.3);
+        setTimeout(() => viewerContent.classList.remove('smooth'), 300);
+    }
+
+    function zoomReset() {
+        resetView();
+    }
+
+    // ============ 事件绑定 ============
+    function setupEvents() {
+        // 鼠标滚轮缩放
+        viewer.addEventListener('wheel', e => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            zoomToPoint(e.clientX, e.clientY, factor);
+        }, { passive: false });
+
+        // 鼠标拖拽
+        viewer.addEventListener('mousedown', e => {
+            if (e.target.closest('.annotation')) return;
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            document.body.classList.add('grabbing');
+            e.preventDefault();
+        });
+
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            translateX += dx;
+            translateY += dy;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            updateTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.classList.remove('grabbing');
+        });
+
+        // 双击切换缩放
+        let lastTapTime = 0;
+        viewer.addEventListener('dblclick', e => {
+            if (e.target.closest('.annotation')) return;
+            viewerContent.classList.add('smooth');
+            if (scale > 1.5) {
+                resetView();
+            } else {
+                zoomToPoint(e.clientX, e.clientY, 2.5 / scale);
+            }
+            setTimeout(() => viewerContent.classList.remove('smooth'), 300);
+        });
+
+        // 触摸事件
+        let touches = [];
+        let lastTouchDist = 0;
+        let lastTouchCX = 0, lastTouchCY = 0;
+        let touchStartTime = 0;
+        let touchStartX = 0, touchStartY = 0;
+
+        viewer.addEventListener('touchstart', e => {
+            touches = Array.from(e.touches);
+            if (touches.length === 1) {
+                isDragging = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                touchStartTime = Date.now();
+                touchStartX = lastX;
+                touchStartY = lastY;
+            } else if (touches.length === 2) {
+                isDragging = false;
+                const dx = touches[1].clientX - touches[0].clientX;
+                const dy = touches[1].clientY - touches[0].clientY;
+                lastTouchDist = Math.sqrt(dx * dx + dy * dy);
+                lastTouchCX = (touches[0].clientX + touches[1].clientX) / 2;
+                lastTouchCY = (touches[0].clientY + touches[1].clientY) / 2;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        viewer.addEventListener('touchmove', e => {
+            const cur = Array.from(e.touches);
+            if (cur.length === 1 && isDragging) {
+                const dx = cur[0].clientX - lastX;
+                const dy = cur[0].clientY - lastY;
+                translateX += dx;
+                translateY += dy;
+                lastX = cur[0].clientX;
+                lastY = cur[0].clientY;
+                updateTransform();
+            } else if (cur.length === 2) {
+                const dx = cur[1].clientX - cur[0].clientX;
+                const dy = cur[1].clientY - cur[0].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const cx = (cur[0].clientX + cur[1].clientX) / 2;
+                const cy = (cur[0].clientY + cur[1].clientY) / 2;
+
+                if (lastTouchDist > 0) {
+                    const factor = dist / lastTouchDist;
+                    zoomToPoint(cx, cy, factor);
+                }
+
+                // 双指平移
+                translateX += cx - lastTouchCX;
+                translateY += cy - lastTouchCY;
+                updateTransform();
+
+                lastTouchDist = dist;
+                lastTouchCX = cx;
+                lastTouchCY = cy;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        viewer.addEventListener('touchend', e => {
+            const cur = Array.from(e.touches);
+            if (cur.length === 0) {
+                // 检测双击
+                const elapsed = Date.now() - touchStartTime;
+                const dist = Math.abs(e.changedTouches[0].clientX - touchStartX) +
+                             Math.abs(e.changedTouches[0].clientY - touchStartY);
+                if (elapsed < 300 && dist < 20) {
+                    const now = Date.now();
+                    if (now - lastTapTime < 400) {
+                        // 双击
+                        viewerContent.classList.add('smooth');
+                        if (scale > 1.5) {
+                            resetView();
+                        } else {
+                            zoomToPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY, 2.5 / scale);
+                        }
+                        setTimeout(() => viewerContent.classList.remove('smooth'), 300);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
+                    }
+                }
+                isDragging = false;
+            } else if (cur.length === 1) {
+                isDragging = true;
+                lastX = cur[0].clientX;
+                lastY = cur[0].clientY;
+                lastTouchDist = 0;
+            }
+        });
+
+        // 窗口大小变化
+        window.addEventListener('resize', () => {
+            resetView();
+        });
+
+        // 键盘快捷键
+        window.addEventListener('keydown', e => {
+            if (e.key === '+' || e.key === '=') zoomIn();
+            else if (e.key === '-') zoomOut();
+            else if (e.key === '0') zoomReset();
+        });
+    }
+
+    // ============ 图片切换 ============
+    function switchImage(id) {
+        if (id === currentImage) return;
+        currentImage = id;
+
+        // 更新按钮状态
+        document.querySelectorAll('.img-switch-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.img === id);
+        });
+
+        // 渐变切换
+        bhImage.style.opacity = '0';
+        bhImage.style.transition = 'opacity 0.3s ease';
+
+        setTimeout(() => {
+            bhImage.src = IMAGES[id].src;
+            bhImage.onload = function() {
+                imageNaturalW = bhImage.naturalWidth;
+                imageNaturalH = bhImage.naturalHeight;
+                bhImage.style.opacity = '1';
+                updateAnnotationPositions();
+                resetView();
+                // 切换图片后重新创建 CSS 粒子（颜色和轨道参数不同）
+                setTimeout(createFxParticles, 100);
+            };
+        }, 300);
+    }
+
+    // ============ 标注控制 ============
+    function toggleAnnotations() {
+        annotationsVisible = !annotationsVisible;
+        const btn = document.getElementById('toggleLabelsBtn');
+        btn.classList.toggle('active', annotationsVisible);
+        annotationsLayer.classList.toggle('annotations-hidden', !annotationsVisible);
+    }
+
+    function highlightAnno(id) {
+        // 清除旧高亮
+        document.querySelectorAll('.annotation.active').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.structure-card.active').forEach(el => el.classList.remove('active'));
+
+        // 高亮标注
+        const annoEl = document.getElementById('anno-' + id);
+        if (annoEl) {
+            annoEl.classList.add('active');
+            // 确保标注可见
+            if (!annotationsVisible) {
+                toggleAnnotations();
+            }
+        }
+
+        // 高亮卡片
+        const card = document.querySelector(`.structure-card[data-anno="${id}"]`);
+        if (card) card.classList.add('active');
+
+        // 3秒后清除
+        setTimeout(() => {
+            if (annoEl) annoEl.classList.remove('active');
+            if (card) card.classList.remove('active');
+        }, 3000);
+    }
+
+    // ============ 面板控制 ============
+    function togglePanel() {
+        panel.classList.toggle('collapsed');
+        panelToggle.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+    }
+
+    function toggleSection(header) {
+        const section = header.parentElement;
+        section.classList.toggle('open');
+    }
+
+    // ============ 吸积盘动画（纯 CSS，零 Canvas/rAF 开销） ============
+    const fxLayer = document.getElementById('fxLayer');
+
+    const FX_CONFIG = {
+        '1': {
+            cx: 50, cy: 47,           // 黑洞中心 (%)
+            diskRx: 42, diskRy: 6,     // 吸积盘椭圆半径 (%)
+            arcRx: 30, arcRy: 32,      // 光弧椭圆半径 (%)
+            colors: ['#f4d03f', '#e67e22', '#f39c12', '#ffcc00', '#ffd700'],
+        },
+        '2': {
+            cx: 50, cy: 48,
+            diskRx: 40, diskRy: 5,
+            arcRx: 28, arcRy: 30,
+            colors: ['#c0d8ff', '#89b4fa', '#ffffff', '#b4d0ff', '#d0e8ff'],
+        }
+    };
+
+    function pickFxColor(cfg) {
+        return cfg.colors[Math.floor(Math.random() * cfg.colors.length)];
+    }
+
+    function createFxParticles() {
+        fxLayer.innerHTML = '';
+        const cfg = FX_CONFIG[currentImage];
+
+        // 吸积盘轨道粒子（30个）
+        for (let i = 0; i < 30; i++) {
+            const rx = cfg.diskRx + (Math.random() - 0.5) * 8;
+            const ry = cfg.diskRy + (Math.random() - 0.5) * 3;
+            const dur = 12 + Math.random() * 18;
+            const delay = -Math.random() * dur;
+            const dotSize = 3 + Math.random() * 5;
+            const opacity = 0.2 + Math.random() * 0.5;
+            const color = pickFxColor(cfg);
+            const angle = Math.random() * 360;
+            // 粒子在轨道上的位置（0=顶部，沿圆周）
+            const dotAngle = Math.random() * 360;
+
+            const ring = document.createElement('div');
+            ring.className = 'orbit-ring';
+            const squash = ry / rx;
+            ring.style.cssText = `
+                left:${cfg.cx}%;top:${cfg.cy}%;
+                width:${rx * 2}%;height:${rx * 2}%;
+                --dur:${dur}s;--delay:${delay}s;
+                transform:translate(-50%,-50%) scaleY(${squash}) rotate(${angle}deg);
+            `;
+
+            const dot = document.createElement('div');
+            dot.className = 'orbit-dot';
+            const rad = dotAngle * Math.PI / 180;
+            const dx = 50 + 50 * Math.cos(rad);
+            const dy = 50 + 50 * Math.sin(rad);
+            dot.style.cssText = `
+                left:${dx}%;top:${dy}%;
+                width:${dotSize}px;height:${dotSize}px;
+                background:radial-gradient(circle,${color},transparent);
+                opacity:${opacity};
+                --counter-scale:${1/squash};
+            `;
+            ring.appendChild(dot);
+            fxLayer.appendChild(ring);
+        }
+
+        // 光弧轨道粒子（15个）
+        for (let i = 0; i < 15; i++) {
+            const rx = cfg.arcRx + (Math.random() - 0.5) * 6;
+            const ry = cfg.arcRy + (Math.random() - 0.5) * 6;
+            const dur = 18 + Math.random() * 24;
+            const delay = -Math.random() * dur;
+            const dotSize = 2 + Math.random() * 4;
+            const opacity = 0.1 + Math.random() * 0.3;
+            const color = pickFxColor(cfg);
+            const angle = Math.random() * 360;
+            const dotAngle = Math.random() * 360;
+
+            const ring = document.createElement('div');
+            ring.className = 'orbit-ring';
+            const squash = ry / rx;
+            ring.style.cssText = `
+                left:${cfg.cx}%;top:${cfg.cy}%;
+                width:${rx * 2}%;height:${rx * 2}%;
+                --dur:${dur}s;--delay:${delay}s;
+                transform:translate(-50%,-50%) scaleY(${squash}) rotate(${angle}deg);
+            `;
+
+            const dot = document.createElement('div');
+            dot.className = 'orbit-dot';
+            const rad = dotAngle * Math.PI / 180;
+            const dx = 50 + 50 * Math.cos(rad);
+            const dy = 50 + 50 * Math.sin(rad);
+            dot.style.cssText = `
+                left:${dx}%;top:${dy}%;
+                width:${dotSize}px;height:${dotSize}px;
+                background:radial-gradient(circle,${color},transparent);
+                opacity:${opacity};
+                --counter-scale:${1/squash};
+            `;
+            ring.appendChild(dot);
+            fxLayer.appendChild(ring);
+        }
+
+        // 闪烁粒子（20个，散布在吸积盘附近）
+        for (let i = 0; i < 20; i++) {
+            const x = cfg.cx + (Math.random() - 0.5) * cfg.diskRx * 1.8;
+            const y = cfg.cy + (Math.random() - 0.5) * 12;
+            const size = 2 + Math.random() * 4;
+            const color = pickFxColor(cfg);
+            const dur = 2 + Math.random() * 4;
+            const delay = Math.random() * dur;
+            const maxOpacity = 0.15 + Math.random() * 0.4;
+
+            const dot = document.createElement('div');
+            dot.className = 'glow-dot';
+            dot.style.cssText = `
+                left:${x}%;top:${y}%;
+                width:${size}px;height:${size}px;
+                background:radial-gradient(circle,${color},transparent);
+                --glow-dur:${dur}s;--glow-delay:${delay}s;--glow-max:${maxOpacity};
+            `;
+            fxLayer.appendChild(dot);
+        }
+    }
+
+    // ============ 启动 ============
+    init();
+
+    // 图片就绪后创建 CSS 粒子
+    if (bhImage.complete && bhImage.naturalWidth > 0) {
+        setTimeout(createFxParticles, 100);
+    } else {
+        bhImage.addEventListener('load', () => setTimeout(createFxParticles, 100));
+    }
+    </script>
+</body>
+</html>
