@@ -275,13 +275,15 @@
             miniSvgEl.removeAttribute('height');
 
             const bjEl = svgEl.querySelector('.state.beijing');
-            const sdEl = svgEl.querySelector('.state.shandong');
+            const sxEl = svgEl.querySelector('.state.shanxiHZ');
+            const hnEl = svgEl.querySelector('.state.henan');
             const hbEl = svgEl.querySelector('.state.hebei');
             if (bjEl) bjEl.classList.add('highlight-city');
-            if (sdEl) sdEl.classList.add('highlight-city');
+            if (sxEl) sxEl.classList.add('highlight-city');
+            if (hnEl) hnEl.classList.add('highlight-city');
             if (hbEl) hbEl.classList.add('highlight-city');
 
-            routeGeo = addRouteOverlay(svgEl, bjEl, sdEl, false);
+            routeGeo = addRouteOverlay(svgEl, bjEl, sxEl, false);
             if (routeGeo) {
                 buildMiniMap(miniSvgEl, routeGeo);
             }
@@ -291,17 +293,17 @@
         }
     }
 
-    function addRouteOverlay(svgEl, bjEl, sdEl, forMiniMap) {
-        if (!bjEl || !sdEl) return null;
+    function addRouteOverlay(svgEl, bjEl, sxEl, forMiniMap) {
+        if (!bjEl || !sxEl) return null;
 
         const bjBox = bjEl.getBBox();
-        const sdBox = sdEl.getBBox();
+        const sxBox = sxEl.getBBox();
         const bjCx = bjBox.x + bjBox.width / 2;
         const bjCy = bjBox.y + bjBox.height / 2 + 4;
 
         // 西安北大约在陕西中部
-        const dzCx = sdBox.x + sdBox.width * 0.35;
-        const dzCy = sdBox.y + sdBox.height * 0.15;
+        const dzCx = sxBox.x + sxBox.width * 0.35;
+        const dzCy = sxBox.y + sxBox.height * 0.15;
         // 郑州东在西安北到北京西的约46%处（550/1200）
         const lfCx = lerp(dzCx, bjCx, 0.81);
         const lfCy = lerp(dzCy, bjCy, 0.81);

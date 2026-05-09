@@ -273,11 +273,13 @@
             miniSvgEl.removeAttribute('height');
 
             const bjEl = svgEl.querySelector('.state.beijing');
-            const sdEl = svgEl.querySelector('.state.shandong');
+            const hnEl = svgEl.querySelector('.state.henan');
+            const sxEl = svgEl.querySelector('.state.shanxiHZ');
             if (bjEl) bjEl.classList.add('highlight-city');
-            if (sdEl) sdEl.classList.add('highlight-city');
+            if (hnEl) hnEl.classList.add('highlight-city');
+            if (sxEl) sxEl.classList.add('highlight-city');
 
-            routeGeo = addRouteOverlay(svgEl, bjEl, sdEl, false);
+            routeGeo = addRouteOverlay(svgEl, bjEl, hnEl, sxEl, false);
             if (routeGeo) {
                 buildMiniMap(miniSvgEl, routeGeo);
             }
@@ -287,20 +289,21 @@
         }
     }
 
-    function addRouteOverlay(svgEl, bjEl, sdEl, forMiniMap) {
-        if (!bjEl || !sdEl) return null;
+    function addRouteOverlay(svgEl, bjEl, hnEl, sxEl, forMiniMap) {
+        if (!bjEl || !hnEl || !sxEl) return null;
 
         const bjBox = bjEl.getBBox();
-        const sdBox = sdEl.getBBox();
+        const hnBox = hnEl.getBBox();
+        const sxBox = sxEl.getBBox();
         const bjCx = bjBox.x + bjBox.width / 2;
         const bjCy = bjBox.y + bjBox.height / 2 + 4;
 
         // 郑州东大约在河南中部
-        const dzCx = sdBox.x + sdBox.width * 0.35;
-        const dzCy = sdBox.y + sdBox.height * 0.15;
+        const dzCx = hnBox.x + hnBox.width * 0.35;
+        const dzCy = hnBox.y + hnBox.height * 0.15;
         // 西安北大约在陕西中部
-        const jnCx = sdBox.x + sdBox.width * 0.45;
-        const jnCy = sdBox.y + sdBox.height * 0.3;
+        const jnCx = sxBox.x + sxBox.width * 0.45;
+        const jnCy = sxBox.y + sxBox.height * 0.3;
 
         const ns = 'http://www.w3.org/2000/svg';
 
