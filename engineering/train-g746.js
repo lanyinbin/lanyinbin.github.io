@@ -49,17 +49,17 @@
     let _currentAudio = null;
     const AUDIO_BASE = 'audio/train-g746/';
     const AUDIO_PATHS = {
-        welcome: AUDIO_BASE + 'welcome.mp3',
-        boarding: AUDIO_BASE + 'boarding.mp3',
-        depart: AUDIO_BASE + 'depart.mp3',
-        'speed-200': AUDIO_BASE + 'speed-200.mp3',
-        'speed-300': AUDIO_BASE + 'speed-300.mp3',
-        'speed-350': AUDIO_BASE + 'speed-350.mp3',
-        'arriving-langfang': AUDIO_BASE + 'arriving-langfang.mp3',
-        'langfang-stop': AUDIO_BASE + 'langfang-stop.mp3',
-        'langfang-depart': AUDIO_BASE + 'langfang-depart.mp3',
-        'arriving-beijing': AUDIO_BASE + 'arriving-beijing.mp3',
-        arrived: AUDIO_BASE + 'arrived.mp3',
+        welcome: AUDIO_BASE + 'welcome.m4a',
+        boarding: AUDIO_BASE + 'boarding.m4a',
+        depart: AUDIO_BASE + 'depart.m4a',
+        'speed-200': AUDIO_BASE + 'speed-200.m4a',
+        'speed-300': AUDIO_BASE + 'speed-300.m4a',
+        'speed-350': AUDIO_BASE + 'speed-350.m4a',
+        'arriving-langfang': AUDIO_BASE + 'arriving-langfang.m4a',
+        'langfang-stop': AUDIO_BASE + 'langfang-stop.m4a',
+        'langfang-depart': AUDIO_BASE + 'langfang-depart.m4a',
+        'arriving-beijing': AUDIO_BASE + 'arriving-beijing.m4a',
+        arrived: AUDIO_BASE + 'arrived.m4a',
     };
     const AUDIO_FALLBACK = {
         welcome: '欢迎乘坐G88次复兴号列车！本次列车由西安北开往北京西，沿途停靠郑州东。一等座16车10F号，祝您旅途愉快！',
@@ -90,8 +90,16 @@
         setTimeout(() => {
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'zh-CN';
-            u.rate = 0.85;
-            u.pitch = 1.15;
+            u.rate = 0.92;
+            u.pitch = 1.08;
+            // 优先选择更自然的中文语音（macOS/iOS: Ting-Ting, Google: Google 普通话）
+            const voices = speechSynthesis.getVoices();
+            const preferred = voices.find(v => v.name.includes('Tingting') || v.name.includes('Ting-Ting'))
+                || voices.find(v => v.name.includes('Google 普通话'))
+                || voices.find(v => v.name.includes('Meijia'))
+                || voices.find(v => v.lang === 'zh-CN' && v.name.includes('Female'))
+                || voices.find(v => v.lang === 'zh-CN');
+            if (preferred) u.voice = preferred;
             speechSynthesis.speak(u);
         }, 50);
     }

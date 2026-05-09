@@ -49,16 +49,16 @@
     let _currentAudio = null;
     const AUDIO_BASE = 'audio/train/';
     const AUDIO_PATHS = {
-        welcome: AUDIO_BASE + 'welcome.mp3',
-        boarding: AUDIO_BASE + 'boarding.mp3',
-        depart: AUDIO_BASE + 'depart.mp3',
-        'speed-200': AUDIO_BASE + 'speed-200.mp3',
-        'speed-300': AUDIO_BASE + 'speed-300.mp3',
-        'arriving-dezhou': AUDIO_BASE + 'arriving-dezhou.mp3',
-        'dezhou-stop': AUDIO_BASE + 'dezhou-stop.mp3',
-        'dezhou-depart': AUDIO_BASE + 'dezhou-depart.mp3',
-        'arriving-jinan': AUDIO_BASE + 'arriving-jinan.mp3',
-        arrived: AUDIO_BASE + 'arrived.mp3',
+        welcome: AUDIO_BASE + 'welcome.m4a',
+        boarding: AUDIO_BASE + 'boarding.m4a',
+        depart: AUDIO_BASE + 'depart.m4a',
+        'speed-200': AUDIO_BASE + 'speed-200.m4a',
+        'speed-300': AUDIO_BASE + 'speed-300.m4a',
+        'arriving-dezhou': AUDIO_BASE + 'arriving-dezhou.m4a',
+        'dezhou-stop': AUDIO_BASE + 'dezhou-stop.m4a',
+        'dezhou-depart': AUDIO_BASE + 'dezhou-depart.m4a',
+        'arriving-jinan': AUDIO_BASE + 'arriving-jinan.m4a',
+        arrived: AUDIO_BASE + 'arrived.m4a',
     };
     const AUDIO_FALLBACK = {
         welcome: '欢迎乘坐G88次列车！本次列车由北京西开往西安北，沿途停靠郑州东。',
@@ -88,8 +88,16 @@
         setTimeout(() => {
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'zh-CN';
-            u.rate = 0.85;
-            u.pitch = 1.15;
+            u.rate = 0.92;
+            u.pitch = 1.08;
+            // 优先选择更自然的中文语音（macOS/iOS: Ting-Ting, Google: Google 普通话）
+            const voices = speechSynthesis.getVoices();
+            const preferred = voices.find(v => v.name.includes('Tingting') || v.name.includes('Ting-Ting'))
+                || voices.find(v => v.name.includes('Google 普通话'))
+                || voices.find(v => v.name.includes('Meijia'))
+                || voices.find(v => v.lang === 'zh-CN' && v.name.includes('Female'))
+                || voices.find(v => v.lang === 'zh-CN');
+            if (preferred) u.voice = preferred;
             speechSynthesis.speak(u);
         }, 50);
     }
