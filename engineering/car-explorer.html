@@ -655,10 +655,14 @@
         requestAnimationFrame(animate);
         if (controls) controls.update();
 
-        // 品牌展台旋转
+        // 品牌展台旋转（只旋转Logo）
         if (currentMode === 'brand') {
-            brandMeshes.forEach((mesh, i) => {
-                mesh.rotation.y += 0.005 * (i % 2 === 0 ? 1 : -1);
+            brandMeshes.forEach((group, i) => {
+                group.traverse(child => {
+                    if (child.userData.isBrandLogo) {
+                        child.rotation.y += 0.005 * (i % 2 === 0 ? 1 : -1);
+                    }
+                });
             });
         }
 
@@ -742,6 +746,115 @@
         });
     }
 
+    // ========== 品牌Logo Canvas纹理 ==========
+    function createBrandLogoTexture(brandId) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512; canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        const cx = 256, cy = 256, r = 220;
+
+        if (brandId === 'bmw') {
+            // 外圈黑色
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.fillStyle = '#000'; ctx.fill(); ctx.lineWidth = 8;
+            ctx.strokeStyle = '#silver'; ctx.stroke();
+            // 银环
+            ctx.beginPath(); ctx.arc(cx, cy, r-10, 0, Math.PI*2);
+            ctx.lineWidth = 6; ctx.strokeStyle = '#C0C0C0'; ctx.stroke();
+            // 蓝白扇形（旋转45度）
+            for (let i = 0; i < 4; i++) {
+                const start = i * Math.PI/2 - Math.PI/4;
+                ctx.beginPath(); ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r-16, start, start + Math.PI/2);
+                ctx.closePath();
+                ctx.fillStyle = i % 2 === 0 ? '#0066B1' : '#FFFFFF';
+                ctx.fill();
+            }
+            // 中心文字
+            ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 42px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('BMW', cx, cy + 4);
+        } else if (brandId === 'mercedes') {
+            // 银色渐变背景
+            const grad = ctx.createRadialGradient(cx-60, cy-60, 20, cx, cy, r);
+            grad.addColorStop(0, '#f0f0f0'); grad.addColorStop(0.5, '#c0c0c0'); grad.addColorStop(1, '#808080');
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.fillStyle = grad; ctx.fill();
+            ctx.lineWidth = 10; ctx.strokeStyle = '#fff'; ctx.stroke();
+            // 三叉星
+            ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 18; ctx.lineCap = 'round';
+            for (let i = 0; i < 3; i++) {
+                const angle = i * (Math.PI * 2 / 3) - Math.PI/2;
+                ctx.beginPath(); ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * (r-30), cy + Math.sin(angle) * (r-30));
+                ctx.stroke();
+            }
+            // 中心圆
+            ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI*2);
+            ctx.fillStyle = '#1a1a1a'; ctx.fill();
+        } else if (brandId === 'audi') {
+            // 白色背景
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512);
+            // 四个银环
+            ctx.strokeStyle = '#A0A0A0'; ctx.lineWidth = 14;
+            const ringR = 55, spacing = 110;
+            for (let i = 0; i < 4; i++) {
+                const rx = cx + (i - 1.5) * spacing;
+                ctx.beginPath(); ctx.arc(rx, cy, ringR, 0, Math.PI*2); ctx.stroke();
+            }
+        } else if (brandId === 'toyota') {
+            // 白色背景
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 512, 512);
+            // 红色椭圆轮廓
+            ctx.strokeStyle = '#EB0A1E'; ctx.lineWidth = 18;
+            ctx.beginPath(); ctx.ellipse(cx, cy, r-20, (r-20)*0.65, 0, 0, Math.PI*2);
+            ctx.stroke();
+            // 内部交叉椭圆
+            ctx.lineWidth = 12;
+            ctx.beginPath(); ctx.ellipse(cx-25, cy, 60, 80, -0.3, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(cx+25, cy, 60, 80, 0.3, 0, Math.PI*2); ctx.stroke();
+            // 中心小椭圆
+            ctx.beginPath(); ctx.ellipse(cx, cy-10, 35, 50, 0, 0, Math.PI*2); ctx.stroke();
+            // 文字
+            ctx.fillStyle = '#EB0A1E'; ctx.font = 'bold 36px sans-serif';
+            ctx.textAlign = 'center'; ctx.fillText('TOYOTA', cx, cy + 130);
+        } else if (brandId === 'byd') {
+            // 红色椭圆背景
+            ctx.fillStyle = '#E60012'; ctx.fillRect(0, 0, 512, 512);
+            ctx.beginPath(); ctx.ellipse(cx, cy, r-10, (r-10)*0.55, 0, 0, Math.PI*2);
+            ctx.fillStyle = '#fff'; ctx.fill();
+            // BYD 文字
+            ctx.fillStyle = '#E60012'; ctx.font = 'bold 120px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('BYD', cx, cy + 8);
+            // 外圈
+            ctx.strokeStyle = '#E60012'; ctx.lineWidth = 10;
+            ctx.beginPath(); ctx.ellipse(cx, cy, r-10, (r-10)*0.55, 0, 0, Math.PI*2); ctx.stroke();
+        } else if (brandId === 'tesla') {
+            // 红色盾形背景
+            ctx.fillStyle = '#CC0000'; ctx.fillRect(0, 0, 512, 512);
+            // 盾形
+            ctx.beginPath();
+            ctx.moveTo(cx, 30); ctx.lineTo(cx + r*0.9, 100);
+            ctx.quadraticCurveTo(cx + r*0.95, cy, cx + r*0.75, 480);
+            ctx.lineTo(cx - r*0.75, 480);
+            ctx.quadraticCurveTo(cx - r*0.95, cy, cx - r*0.9, 100);
+            ctx.closePath();
+            ctx.fillStyle = '#fff'; ctx.fill();
+            // T型
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 24; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(cx - 80, cy - 40); ctx.lineTo(cx + 80, cy - 40); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy - 40); ctx.lineTo(cx, cy + 100); ctx.stroke();
+            // 顶部弧线装饰
+            ctx.strokeStyle = '#000'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.arc(cx, cy - 40, 50, Math.PI, 0); ctx.stroke();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = 16;
+        return texture;
+    }
+
     // ========== 品牌识别馆 ==========
     function createBrandShowroom() {
         const spacing = 7;
@@ -768,67 +881,17 @@
             ring.position.y = 0.42;
             group.add(ring);
 
-            // 品牌标识几何体（简化）
-            const iconGroup = new THREE.Group();
-            if (brand.id === 'bmw') {
-                // 蓝白扇形
-                for (let j = 0; j < 4; j++) {
-                    const wedgeGeo = new THREE.CircleGeometry(1, 32, j * Math.PI/2, Math.PI/2);
-                    const wedgeMat = new THREE.MeshBasicMaterial({
-                        color: j % 2 === 0 ? 0x0066B1 : 0xFFFFFF,
-                        side: THREE.DoubleSide
-                    });
-                    const wedge = new THREE.Mesh(wedgeGeo, wedgeMat);
-                    wedge.rotation.x = -Math.PI / 2;
-                    iconGroup.add(wedge);
-                }
-            } else if (brand.id === 'mercedes') {
-                // 三叉星
-                for (let j = 0; j < 3; j++) {
-                    const armGeo = new THREE.BoxGeometry(0.15, 1.2, 0.15);
-                    const armMat = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, metalness: 0.8 });
-                    const arm = new THREE.Mesh(armGeo, armMat);
-                    arm.rotation.z = j * (Math.PI * 2 / 3);
-                    iconGroup.add(arm);
-                }
-            } else if (brand.id === 'audi') {
-                // 四个圈
-                for (let j = 0; j < 4; j++) {
-                    const circleGeo = new THREE.TorusGeometry(0.35, 0.06, 16, 32);
-                    const circleMat = new THREE.MeshStandardMaterial({ color: 0xBB0A30, metalness: 0.6 });
-                    const circle = new THREE.Mesh(circleGeo, circleMat);
-                    circle.position.x = (j - 1.5) * 0.6;
-                    circle.rotation.y = Math.PI / 2;
-                    iconGroup.add(circle);
-                }
-            } else if (brand.id === 'toyota') {
-                // 椭圆标志
-                const ovalGeo = new THREE.TorusGeometry(0.7, 0.12, 16, 32);
-                const ovalMat = new THREE.MeshStandardMaterial({ color: 0xEB0A1E, metalness: 0.5 });
-                const oval = new THREE.Mesh(ovalGeo, ovalMat);
-                iconGroup.add(oval);
-            } else if (brand.id === 'byd') {
-                // 绿色椭圆
-                const ovalGeo = new THREE.SphereGeometry(0.8, 32, 16);
-                const ovalMat = new THREE.MeshStandardMaterial({ color: 0x009944, metalness: 0.4 });
-                const oval = new THREE.Mesh(ovalGeo, ovalMat);
-                oval.scale.set(1.3, 0.7, 0.3);
-                iconGroup.add(oval);
-            } else if (brand.id === 'tesla') {
-                // T型
-                const tGroup = new THREE.Group();
-                const topGeo = new THREE.BoxGeometry(1.2, 0.15, 0.15);
-                const stemGeo = new THREE.BoxGeometry(0.15, 0.9, 0.15);
-                const tMat = new THREE.MeshStandardMaterial({ color: 0xCC0000, metalness: 0.7 });
-                const top = new THREE.Mesh(topGeo, tMat);
-                const stem = new THREE.Mesh(stemGeo, tMat);
-                stem.position.y = -0.35;
-                tGroup.add(top); tGroup.add(stem);
-                iconGroup.add(tGroup);
-            }
-
-            iconGroup.position.y = 2.5;
-            group.add(iconGroup);
+            // 品牌标识（Canvas纹理精细绘制）
+            const logoTexture = createBrandLogoTexture(brand.id);
+            const logoGeo = new THREE.PlaneGeometry(2.8, 2.8);
+            const logoMat = new THREE.MeshBasicMaterial({
+                map: logoTexture, transparent: true, side: THREE.DoubleSide
+            });
+            const logoMesh = new THREE.Mesh(logoGeo, logoMat);
+            logoMesh.position.y = 2.5;
+            logoMesh.rotation.x = -Math.PI / 6;
+            logoMesh.userData.isBrandLogo = true;
+            group.add(logoMesh);
 
             // 汽车模型（简化）
             const carMesh = createBrandCar(brand.color, brand.accent);
@@ -844,43 +907,125 @@
 
             group.position.set(startX + i * spacing, 0, 0);
             scene.add(group);
-            brandMeshes.push(iconGroup);
+            brandMeshes.push(group);
         });
     }
 
     function createBrandCar(bodyColor, accentColor) {
         const car = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.5, roughness: 0.25 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x446688, transparent: true, opacity: 0.35, metalness: 0.9, roughness: 0.05 });
+        const rubberMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.2 });
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.3, roughness: 0.5 });
 
-        // 车身
-        const bodyGeo = new THREE.BoxGeometry(2.2, 0.7, 1.1);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.4, roughness: 0.3 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.55;
-        body.castShadow = true;
-        car.add(body);
+        // ===== 车身主体（流线型，用多个分段Box模拟曲面） =====
+        // 前引擎盖
+        const hoodGeo = new THREE.BoxGeometry(0.8, 0.45, 1.05);
+        const hood = new THREE.Mesh(hoodGeo, bodyMat);
+        hood.position.set(0.85, 0.55, 0);
+        hood.castShadow = true; car.add(hood);
 
-        // 车顶
-        const roofGeo = new THREE.BoxGeometry(1.3, 0.5, 0.95);
+        // 驾驶舱主体
+        const cabinGeo = new THREE.BoxGeometry(1.4, 0.6, 1.0);
+        const cabin = new THREE.Mesh(cabinGeo, bodyMat);
+        cabin.position.set(-0.05, 0.65, 0);
+        cabin.castShadow = true; car.add(cabin);
+
+        // 后备箱
+        const trunkGeo = new THREE.BoxGeometry(0.7, 0.5, 1.0);
+        const trunk = new THREE.Mesh(trunkGeo, bodyMat);
+        trunk.position.set(-0.95, 0.58, 0);
+        trunk.castShadow = true; car.add(trunk);
+
+        // 车顶（圆顶感）
+        const roofGeo = new THREE.BoxGeometry(1.2, 0.35, 0.88);
         const roof = new THREE.Mesh(roofGeo, bodyMat);
-        roof.position.set(-0.1, 1.15, 0);
+        roof.position.set(-0.05, 1.1, 0);
         car.add(roof);
 
-        // 车轮
-        const wheelGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 16);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-        [[0.7,0.25,0.5], [0.7,0.25,-0.5], [-0.7,0.25,0.5], [-0.7,0.25,-0.5]].forEach(p => {
-            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-            wheel.rotation.z = Math.PI / 2;
-            wheel.position.set(...p);
-            car.add(wheel);
+        // 前保险杠
+        const bumperF = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 1.08), blackMat);
+        bumperF.position.set(1.3, 0.35, 0); car.add(bumperF);
+
+        // 后保险杠
+        const bumperR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 1.05), blackMat);
+        bumperR.position.set(-1.32, 0.38, 0); car.add(bumperR);
+
+        // 进气格栅
+        const grill = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.7), blackMat);
+        grill.position.set(1.31, 0.52, 0); car.add(grill);
+
+        // 前大灯
+        const headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffffcc, emissiveIntensity: 0.4, metalness: 0.5 });
+        [[1.28, 0.6, 0.38], [1.28, 0.6, -0.38]].forEach(p => {
+            const light = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.18), headlightMat);
+            light.position.set(...p); car.add(light);
         });
 
-        // 车窗
-        const windowMat = new THREE.MeshStandardMaterial({ color: 0x88CCFF, transparent: true, opacity: 0.5, metalness: 0.9 });
-        [[0.3,1.15,0.48,1,0.4,0.02], [0.3,1.15,-0.48,1,0.4,0.02]].forEach(p => {
-            const win = new THREE.Mesh(new THREE.BoxGeometry(p[3],p[4],p[5]), windowMat);
-            win.position.set(p[0],p[1],p[2]);
-            car.add(win);
+        // 尾灯
+        const taillightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.3 });
+        [[-1.3, 0.65, 0.35], [-1.3, 0.65, -0.35]].forEach(p => {
+            const light = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.16), taillightMat);
+            light.position.set(...p); car.add(light);
+        });
+
+        // ===== 车窗 =====
+        // 前挡风玻璃（倾斜）
+        const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.4, 0.82), glassMat);
+        windshield.position.set(0.55, 1.0, 0);
+        windshield.rotation.z = -0.3;
+        car.add(windshield);
+
+        // 后挡风玻璃
+        const rearWindow = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.35, 0.82), glassMat);
+        rearWindow.position.set(-0.65, 1.0, 0);
+        rearWindow.rotation.z = 0.25;
+        car.add(rearWindow);
+
+        // 侧窗
+        [[0.15, 0.95, 0.51], [0.15, 0.95, -0.51]].forEach(p => {
+            const sideWin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.28, 0.02), glassMat);
+            sideWin.position.set(...p); car.add(sideWin);
+        });
+
+        // ===== 车轮（轮胎+轮毂分离） =====
+        const wheelPositions = [[0.75,0.25,0.52], [0.75,0.25,-0.52], [-0.75,0.25,0.52], [-0.75,0.25,-0.52]];
+        wheelPositions.forEach(p => {
+            const wheelGroup = new THREE.Group();
+            wheelGroup.position.set(...p);
+
+            // 轮胎（圆环）
+            const tire = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.1, 12, 24), rubberMat);
+            tire.rotation.y = Math.PI / 2;
+            wheelGroup.add(tire);
+
+            // 轮毂
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 16), rimMat);
+            rim.rotation.z = Math.PI / 2;
+            wheelGroup.add(rim);
+
+            // 轮辐
+            for (let k = 0; k < 5; k++) {
+                const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.22, 0.02), rimMat);
+                spoke.rotation.z = k * (Math.PI * 2 / 5);
+                spoke.rotation.y = Math.PI / 2;
+                wheelGroup.add(spoke);
+            }
+
+            car.add(wheelGroup);
+        });
+
+        // 门把手
+        [[0.1, 0.72, 0.52], [0.1, 0.72, -0.52]].forEach(p => {
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.02), blackMat);
+            handle.position.set(...p); car.add(handle);
+        });
+
+        // 后视镜
+        [[0.45, 0.85, 0.58], [0.45, 0.85, -0.58]].forEach(p => {
+            const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.04), bodyMat);
+            mirror.position.set(...p); car.add(mirror);
         });
 
         return car;
@@ -892,46 +1037,129 @@
         carGroup.userData.isInteractive = true;
 
         PARTS_DATA.forEach(data => {
-            let geometry;
-            if (data.geometry === 'cylinder') {
-                geometry = new THREE.CylinderGeometry(data.size[0]/2, data.size[1]/2, data.size[2], 32);
+            const partGroup = new THREE.Group();
+            const metalMat = new THREE.MeshStandardMaterial({ color: data.color, metalness: 0.4, roughness: 0.4 });
+            const rubberMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+            const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.1 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x446688, transparent: true, opacity: 0.35, metalness: 0.9, roughness: 0.05 });
+
+            if (data.id === 'chassis') {
+                // 底盘：两根纵梁 + 多根横梁
+                const mainBeam = new THREE.Mesh(new THREE.BoxGeometry(5, 0.15, 0.2), metalMat);
+                mainBeam.position.z = 0.3; partGroup.add(mainBeam);
+                const mainBeam2 = new THREE.Mesh(new THREE.BoxGeometry(5, 0.15, 0.2), metalMat);
+                mainBeam2.position.z = -0.3; partGroup.add(mainBeam2);
+                for (let i = -2; i <= 2; i++) {
+                    const cross = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.0), metalMat);
+                    cross.position.x = i * 1.2; partGroup.add(cross);
+                }
+            } else if (data.id === 'engine') {
+                // 发动机：V型缸体
+                const block = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.7, 0.7), metalMat);
+                partGroup.add(block);
+                for (let i = 0; i < 3; i++) {
+                    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4, 12), chromeMat);
+                    cyl.position.set(-0.2 + i * 0.2, 0.45, 0.15);
+                    partGroup.add(cyl);
+                    const cyl2 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.4, 12), chromeMat);
+                    cyl2.position.set(-0.2 + i * 0.2, 0.45, -0.15);
+                    partGroup.add(cyl2);
+                }
+                // 进气管
+                const intake = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.4), metalMat);
+                intake.position.set(0.3, 0.5, 0); partGroup.add(intake);
+            } else if (data.id === 'transmission') {
+                // 变速箱：圆角长方体
+                const box = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.6), metalMat);
+                partGroup.add(box);
+                const detail = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.5, 16), chromeMat);
+                detail.rotation.z = Math.PI / 2; detail.position.x = 0.3; partGroup.add(detail);
+            } else if (data.id === 'body') {
+                // 车身外壳：分段组合
+                const hood = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.55, 2.2), metalMat);
+                hood.position.set(1.3, 0.1, 0); partGroup.add(hood);
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 2.1), metalMat);
+                cabin.position.set(-0.2, 0.15, 0); partGroup.add(cabin);
+                const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.5, 2.0), metalMat);
+                trunk.position.set(-1.4, 0.05, 0); partGroup.add(trunk);
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 1.9), metalMat);
+                roof.position.set(-0.2, 0.6, 0); partGroup.add(roof);
+            } else if (data.id.startsWith('wheel')) {
+                // 车轮：轮胎+轮毂+轮辐
+                const tire = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.15, 12, 24), rubberMat);
+                tire.rotation.y = Math.PI / 2; partGroup.add(tire);
+                const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 16), chromeMat);
+                rim.rotation.z = Math.PI / 2; partGroup.add(rim);
+                for (let k = 0; k < 5; k++) {
+                    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.35, 0.02), chromeMat);
+                    spoke.rotation.z = k * (Math.PI * 2 / 5);
+                    spoke.rotation.y = Math.PI / 2;
+                    partGroup.add(spoke);
+                }
+            } else if (data.id === 'seat') {
+                // 座椅：坐垫+靠背+头枕
+                const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.7), metalMat);
+                cushion.position.y = -0.15; partGroup.add(cushion);
+                const back = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.7, 0.65), metalMat);
+                back.position.set(-0.3, 0.25, 0); partGroup.add(back);
+                const headrest = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.35), metalMat);
+                headrest.position.set(-0.3, 0.65, 0); partGroup.add(headrest);
+            } else if (data.id === 'steering') {
+                // 方向盘：圆环+辐条+中心
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.03, 8, 24), metalMat);
+                partGroup.add(ring);
+                const center = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 12), metalMat);
+                center.rotation.x = Math.PI / 2; partGroup.add(center);
+                for (let k = 0; k < 3; k++) {
+                    const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.22, 0.02), metalMat);
+                    spoke.rotation.z = k * (Math.PI * 2 / 3);
+                    partGroup.add(spoke);
+                }
+                // 转向柱
+                const column = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8), metalMat);
+                column.position.y = -0.3; partGroup.add(column);
+            } else if (data.id === 'headlight') {
+                // 大灯：透镜形状
+                const housing = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 0.12), metalMat);
+                partGroup.add(housing);
+                const lens = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), chromeMat);
+                lens.position.x = 0.12; lens.rotation.z = -Math.PI / 2; partGroup.add(lens);
+            } else if (data.id === 'taillight') {
+                // 尾灯
+                const housing = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.1), metalMat);
+                partGroup.add(housing);
+                const lens = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), chromeMat);
+                lens.position.x = -0.1; lens.rotation.z = Math.PI / 2; partGroup.add(lens);
+            } else if (data.id === 'windshield') {
+                // 挡风玻璃：倾斜透明板
+                const glass = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 1.6), glassMat);
+                partGroup.add(glass);
             } else {
-                geometry = new THREE.BoxGeometry(data.size[0], data.size[1], data.size[2]);
+                // 默认
+                const box = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), metalMat);
+                partGroup.add(box);
             }
 
-            const materialProps = {
-                color: data.color,
-                roughness: 0.6,
-                metalness: 0.2
-            };
-            if (data.transparent) {
-                materialProps.transparent = true;
-                materialProps.opacity = data.opacity;
-            }
-            if (data.emissive) {
-                materialProps.emissive = new THREE.Color(data.emissive);
-                materialProps.emissiveIntensity = 0.3;
-            }
-
-            const material = new THREE.MeshStandardMaterial(materialProps);
-            const mesh = new THREE.Mesh(geometry, material);
-
-            mesh.position.set(data.pos.x, data.pos.y, data.pos.z);
+            partGroup.position.set(data.pos.x, data.pos.y, data.pos.z);
             if (data.rotation) {
-                mesh.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
+                partGroup.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
             }
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
+            partGroup.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
 
-            mesh.userData.isCarPart = true;
-            mesh.userData.partData = data;
-            mesh.userData.originalPos = { ...data.pos };
-            mesh.userData.explodePos = { ...data.explode };
-            mesh.userData.isExploded = false;
-            mesh.userData.isAssembled = true;
+            partGroup.userData.isCarPart = true;
+            partGroup.userData.partData = data;
+            partGroup.userData.originalPos = { ...data.pos };
+            partGroup.userData.explodePos = { ...data.explode };
+            partGroup.userData.isExploded = false;
+            partGroup.userData.isAssembled = true;
 
-            carGroup.add(mesh);
-            carParts.push(mesh);
+            carGroup.add(partGroup);
+            carParts.push(partGroup);
         });
 
         scene.add(carGroup);
@@ -974,15 +1202,13 @@
             // 重置所有零件为未组装
             carParts.forEach(part => {
                 part.userData.isAssembled = false;
-                part.material.emissive = new THREE.Color(0x444444);
-                part.material.emissiveIntensity = 0.2;
+                setPartEmissive(part, 0x444444, 0.2);
             });
             assembledCount = 0;
             updateProgress();
         } else {
             carParts.forEach(part => {
-                part.material.emissive = new THREE.Color(0x000000);
-                part.material.emissiveIntensity = 0;
+                setPartEmissive(part, 0x000000, 0);
             });
         }
     }
@@ -1045,10 +1271,15 @@
                 }
             }
         } else if (currentMode === 'factory') {
-            const intersects = raycaster.intersectObjects(carParts);
+            const intersects = raycaster.intersectObjects(carParts, true);
             if (intersects.length > 0) {
-                const part = intersects[0].object;
-                handlePartClick(part);
+                let obj = intersects[0].object;
+                while (obj.parent && !obj.userData.isCarPart) {
+                    obj = obj.parent;
+                }
+                if (obj.userData.isCarPart) {
+                    handlePartClick(obj);
+                }
             }
         }
     }
@@ -1059,24 +1290,34 @@
         raycaster.setFromCamera(mouse, camera);
 
         if (currentMode === 'factory') {
-            const intersects = raycaster.intersectObjects(carParts);
+            const intersects = raycaster.intersectObjects(carParts, true);
             carParts.forEach(p => {
                 if (!p.userData.isAssembled) {
-                    p.material.emissive = new THREE.Color(0x000000);
-                    p.material.emissiveIntensity = 0;
+                    setPartEmissive(p, 0x000000, 0);
                 }
             });
             if (intersects.length > 0) {
-                const p = intersects[0].object;
-                if (!p.userData.isAssembled) {
-                    p.material.emissive = new THREE.Color(0x4ECDC4);
-                    p.material.emissiveIntensity = 0.3;
+                let p = intersects[0].object;
+                while (p.parent && !p.userData.isCarPart) {
+                    p = p.parent;
+                }
+                if (p.userData.isCarPart && !p.userData.isAssembled) {
+                    setPartEmissive(p, 0x4ECDC4, 0.3);
                 }
                 document.body.style.cursor = 'pointer';
             } else {
                 document.body.style.cursor = 'default';
             }
         }
+    }
+
+    function setPartEmissive(part, color, intensity) {
+        part.traverse(child => {
+            if (child.isMesh && child.material) {
+                child.material.emissive = new THREE.Color(color);
+                child.material.emissiveIntensity = intensity;
+            }
+        });
     }
 
     function handlePartClick(part) {
@@ -1086,8 +1327,7 @@
             // 组装这个零件
             part.userData.isAssembled = true;
             part.userData.isExploded = false;
-            part.material.emissive = new THREE.Color(0x000000);
-            part.material.emissiveIntensity = 0;
+            setPartEmissive(part, 0x000000, 0);
             animatePartTo(part, data.pos);
             assembledCount++;
             updateProgress();
@@ -1132,6 +1372,29 @@
 
     function closeInfo() {
         document.getElementById('infoPanel').classList.remove('active');
+        // 品牌模式下，关闭后回到品牌展厅全景
+        if (currentMode === 'brand') {
+            if (controls) {
+                new TWEEN_Camera(camera, { x: 0, y: 8, z: 22 });
+                new TWEEN_ControlsTarget(controls, { x: 0, y: 0, z: 0 });
+            }
+        }
+    }
+
+    function TWEEN_ControlsTarget(controls, target) {
+        const start = { x: controls.target.x, y: controls.target.y, z: controls.target.z };
+        const duration = 800;
+        const startTime = Date.now();
+        function step() {
+            const elapsed = Date.now() - startTime;
+            const t = Math.min(elapsed / duration, 1);
+            const ease = 1 - Math.pow(1 - t, 3);
+            controls.target.x = start.x + (target.x - start.x) * ease;
+            controls.target.y = start.y + (target.y - start.y) * ease;
+            controls.target.z = start.z + (target.z - start.z) * ease;
+            if (t < 1) requestAnimationFrame(step);
+        }
+        step();
     }
 
     // ========== 品牌问答 ==========
