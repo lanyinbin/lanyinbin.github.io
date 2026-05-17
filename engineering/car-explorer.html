@@ -895,7 +895,7 @@
             group.add(logoMesh);
 
             // 汽车模型（简化）
-            const carMesh = createBrandCar(brand.color, brand.accent);
+            const carMesh = createBrandCar(brand.id, brand.color, brand.accent);
             carMesh.position.y = 1.2;
             group.add(carMesh);
 
@@ -912,122 +912,223 @@
         });
     }
 
-    function createBrandCar(bodyColor, accentColor) {
-        const car = new THREE.Group();
-        const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, metalness: 0.5, roughness: 0.25 });
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x446688, transparent: true, opacity: 0.35, metalness: 0.9, roughness: 0.05 });
-        const rubberMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
-        const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.2 });
-        const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.3, roughness: 0.5 });
+    // ========== 车型侧视图Canvas绘制 ==========
+    function createCarSilhouette(brandId, bodyColor) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 800; canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+        const c = bodyColor.toString(16).padStart(6, '0');
+        const mainColor = '#' + c;
+        const darkColor = '#' + Math.max(0, parseInt(c.slice(0,2),16)-40).toString(16).padStart(2,'0') + Math.max(0, parseInt(c.slice(2,4),16)-40).toString(16).padStart(2,'0') + Math.max(0, parseInt(c.slice(4,6),16)-40).toString(16).padStart(2,'0');
 
-        // ===== 车身主体（流线型，用多个分段Box模拟曲面） =====
-        // 前引擎盖
-        const hoodGeo = new THREE.BoxGeometry(0.8, 0.45, 1.05);
-        const hood = new THREE.Mesh(hoodGeo, bodyMat);
-        hood.position.set(0.85, 0.55, 0);
-        hood.castShadow = true; car.add(hood);
+        ctx.fillStyle = 'rgba(0,0,0,0)';
+        ctx.fillRect(0, 0, 800, 320);
 
-        // 驾驶舱主体
-        const cabinGeo = new THREE.BoxGeometry(1.4, 0.6, 1.0);
-        const cabin = new THREE.Mesh(cabinGeo, bodyMat);
-        cabin.position.set(-0.05, 0.65, 0);
-        cabin.castShadow = true; car.add(cabin);
-
-        // 后备箱
-        const trunkGeo = new THREE.BoxGeometry(0.7, 0.5, 1.0);
-        const trunk = new THREE.Mesh(trunkGeo, bodyMat);
-        trunk.position.set(-0.95, 0.58, 0);
-        trunk.castShadow = true; car.add(trunk);
-
-        // 车顶（圆顶感）
-        const roofGeo = new THREE.BoxGeometry(1.2, 0.35, 0.88);
-        const roof = new THREE.Mesh(roofGeo, bodyMat);
-        roof.position.set(-0.05, 1.1, 0);
-        car.add(roof);
-
-        // 前保险杠
-        const bumperF = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.25, 1.08), blackMat);
-        bumperF.position.set(1.3, 0.35, 0); car.add(bumperF);
-
-        // 后保险杠
-        const bumperR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 1.05), blackMat);
-        bumperR.position.set(-1.32, 0.38, 0); car.add(bumperR);
-
-        // 进气格栅
-        const grill = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.7), blackMat);
-        grill.position.set(1.31, 0.52, 0); car.add(grill);
-
-        // 前大灯
-        const headlightMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: 0xffffcc, emissiveIntensity: 0.4, metalness: 0.5 });
-        [[1.28, 0.6, 0.38], [1.28, 0.6, -0.38]].forEach(p => {
-            const light = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.18), headlightMat);
-            light.position.set(...p); car.add(light);
-        });
-
-        // 尾灯
-        const taillightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.3 });
-        [[-1.3, 0.65, 0.35], [-1.3, 0.65, -0.35]].forEach(p => {
-            const light = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.16), taillightMat);
-            light.position.set(...p); car.add(light);
-        });
-
-        // ===== 车窗 =====
-        // 前挡风玻璃（倾斜）
-        const windshield = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.4, 0.82), glassMat);
-        windshield.position.set(0.55, 1.0, 0);
-        windshield.rotation.z = -0.3;
-        car.add(windshield);
-
-        // 后挡风玻璃
-        const rearWindow = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.35, 0.82), glassMat);
-        rearWindow.position.set(-0.65, 1.0, 0);
-        rearWindow.rotation.z = 0.25;
-        car.add(rearWindow);
-
-        // 侧窗
-        [[0.15, 0.95, 0.51], [0.15, 0.95, -0.51]].forEach(p => {
-            const sideWin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.28, 0.02), glassMat);
-            sideWin.position.set(...p); car.add(sideWin);
-        });
-
-        // ===== 车轮（轮胎+轮毂分离） =====
-        const wheelPositions = [[0.75,0.25,0.52], [0.75,0.25,-0.52], [-0.75,0.25,0.52], [-0.75,0.25,-0.52]];
-        wheelPositions.forEach(p => {
-            const wheelGroup = new THREE.Group();
-            wheelGroup.position.set(...p);
-
-            // 轮胎（圆环）
-            const tire = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.1, 12, 24), rubberMat);
-            tire.rotation.y = Math.PI / 2;
-            wheelGroup.add(tire);
-
+        const drawWheel = (x, y, r) => {
+            // 轮胎
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = '#1a1a1a'; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = '#333'; ctx.stroke();
             // 轮毂
-            const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.06, 16), rimMat);
-            rim.rotation.z = Math.PI / 2;
-            wheelGroup.add(rim);
-
+            ctx.beginPath(); ctx.arc(x, y, r*0.6, 0, Math.PI*2);
+            ctx.fillStyle = '#aaa'; ctx.fill();
             // 轮辐
-            for (let k = 0; k < 5; k++) {
-                const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.22, 0.02), rimMat);
-                spoke.rotation.z = k * (Math.PI * 2 / 5);
-                spoke.rotation.y = Math.PI / 2;
-                wheelGroup.add(spoke);
+            for (let i = 0; i < 5; i++) {
+                const a = i * (Math.PI*2/5) - Math.PI/2;
+                ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(a)*r*0.55, y + Math.sin(a)*r*0.55);
+                ctx.lineWidth = 2; ctx.strokeStyle = '#888'; ctx.stroke();
             }
+        };
 
-            car.add(wheelGroup);
-        });
+        if (brandId === 'bmw') {
+            // 宝马X5 - SUV轮廓，高车身
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(120, 210); ctx.lineTo(130, 170); ctx.lineTo(200, 155); ctx.lineTo(280, 130);
+            ctx.lineTo(520, 125); ctx.lineTo(600, 150); ctx.lineTo(680, 165); ctx.lineTo(690, 200); ctx.lineTo(695, 220);
+            ctx.lineTo(680, 230); ctx.lineTo(600, 230); ctx.lineTo(580, 200); ctx.lineTo(500, 200); ctx.lineTo(480, 230);
+            ctx.lineTo(240, 230); ctx.lineTo(220, 200); ctx.lineTo(140, 200); ctx.lineTo(120, 210);
+            ctx.closePath(); ctx.fill();
+            // 双肾格栅
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.roundRect(665, 165, 18, 35, 8); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(685, 165, 18, 35, 8); ctx.fill();
+            // 大灯
+            ctx.fillStyle = '#ffffcc';
+            ctx.beginPath(); ctx.ellipse(645, 175, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+            // 车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(290, 138); ctx.lineTo(510, 133); ctx.lineTo(580, 155); ctx.lineTo(570, 165); ctx.lineTo(280, 160); ctx.closePath(); ctx.fill();
+            drawWheel(180, 215, 28); drawWheel(530, 215, 28);
+        } else if (brandId === 'mercedes') {
+            // 奔驰S级 - 豪华轿车，长轴距
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(100, 215); ctx.lineTo(110, 185); ctx.lineTo(180, 165); ctx.lineTo(320, 145);
+            ctx.lineTo(580, 142); ctx.lineTo(660, 160); ctx.lineTo(690, 175); ctx.lineTo(700, 210);
+            ctx.lineTo(695, 225); ctx.lineTo(620, 225); ctx.lineTo(600, 200); ctx.lineTo(480, 200); ctx.lineTo(460, 225);
+            ctx.lineTo(200, 225); ctx.lineTo(180, 200); ctx.lineTo(120, 200); ctx.lineTo(100, 215);
+            ctx.closePath(); ctx.fill();
+            // 立标
+            ctx.strokeStyle = '#silver'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(690, 165); ctx.lineTo(690, 145); ctx.stroke();
+            // 大灯
+            ctx.fillStyle = '#ffffcc';
+            ctx.beginPath(); ctx.ellipse(670, 178, 14, 7, 0, 0, Math.PI*2); ctx.fill();
+            // 格栅
+            ctx.fillStyle = '#ccc';
+            ctx.beginPath(); ctx.rect(685, 170, 12, 25); ctx.fill();
+            // 车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(330, 152); ctx.lineTo(570, 150); ctx.lineTo(640, 165); ctx.lineTo(630, 172); ctx.lineTo(320, 168); ctx.closePath(); ctx.fill();
+            drawWheel(150, 220, 26); drawWheel(540, 220, 26);
+        } else if (brandId === 'audi') {
+            // 奥迪A6 - 流线型轿车
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(110, 215); ctx.lineTo(120, 180); ctx.lineTo(200, 160); ctx.lineTo(340, 140);
+            ctx.lineTo(560, 138); ctx.lineTo(640, 155); ctx.lineTo(690, 170); ctx.lineTo(700, 205);
+            ctx.lineTo(695, 220); ctx.lineTo(610, 220); ctx.lineTo(590, 198); ctx.lineTo(460, 198); ctx.lineTo(440, 220);
+            ctx.lineTo(190, 220); ctx.lineTo(170, 198); ctx.lineTo(130, 198); ctx.lineTo(110, 215);
+            ctx.closePath(); ctx.fill();
+            // 大嘴格栅
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.roundRect(675, 168, 22, 30, 6); ctx.fill();
+            // 大灯
+            ctx.fillStyle = '#ffffcc';
+            ctx.beginPath(); ctx.ellipse(655, 175, 13, 6, 0, 0, Math.PI*2); ctx.fill();
+            // 车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(350, 148); ctx.lineTo(550, 146); ctx.lineTo(620, 162); ctx.lineTo(610, 168); ctx.lineTo(340, 164); ctx.closePath(); ctx.fill();
+            drawWheel(160, 218, 26); drawWheel(520, 218, 26);
+        } else if (brandId === 'toyota') {
+            // 丰田普拉多 - 硬派SUV，方正造型
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(130, 215); ctx.lineTo(135, 175); ctx.lineTo(200, 160); ctx.lineTo(300, 140);
+            ctx.lineTo(580, 135); ctx.lineTo(650, 155); ctx.lineTo(680, 170); ctx.lineTo(690, 210);
+            ctx.lineTo(685, 228); ctx.lineTo(610, 228); ctx.lineTo(590, 198); ctx.lineTo(470, 198); ctx.lineTo(450, 228);
+            ctx.lineTo(220, 228); ctx.lineTo(200, 198); ctx.lineTo(150, 198); ctx.lineTo(130, 215);
+            ctx.closePath(); ctx.fill();
+            // 大灯（方形）
+            ctx.fillStyle = '#ffffcc';
+            ctx.beginPath(); ctx.roundRect(660, 172, 20, 14, 3); ctx.fill();
+            // 格栅
+            ctx.fillStyle = '#222';
+            ctx.beginPath(); ctx.roundRect(650, 165, 35, 28, 4); ctx.fill();
+            // 车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(310, 148); ctx.lineTo(570, 143); ctx.lineTo(630, 162); ctx.lineTo(620, 170); ctx.lineTo(300, 165); ctx.closePath(); ctx.fill();
+            // 备胎罩暗示（尾部圆形）
+            ctx.fillStyle = darkColor;
+            ctx.beginPath(); ctx.arc(135, 195, 15, 0, Math.PI*2); ctx.fill();
+            drawWheel(175, 220, 30); drawWheel(510, 220, 30);
+        } else if (brandId === 'byd') {
+            // 比亚迪汉 - 轿跑，溜背造型
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(120, 218); ctx.lineTo(130, 185); ctx.lineTo(210, 165); ctx.lineTo(360, 142);
+            ctx.lineTo(580, 138); ctx.lineTo(650, 158); ctx.lineTo(690, 178); ctx.lineTo(700, 208);
+            ctx.lineTo(695, 222); ctx.lineTo(610, 222); ctx.lineTo(600, 200); ctx.lineTo(480, 200); ctx.lineTo(460, 222);
+            ctx.lineTo(200, 222); ctx.lineTo(180, 200); ctx.lineTo(140, 200); ctx.lineTo(120, 218);
+            ctx.closePath(); ctx.fill();
+            // 龙脸格栅
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.roundRect(675, 172, 20, 28, 5); ctx.fill();
+            // 大灯（细长）
+            ctx.fillStyle = '#ccffff';
+            ctx.beginPath(); ctx.ellipse(650, 178, 18, 5, 0, 0, Math.PI*2); ctx.fill();
+            // 溜背车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(370, 150); ctx.lineTo(570, 146); ctx.lineTo(630, 166); ctx.lineTo(560, 185); ctx.lineTo(360, 175); ctx.closePath(); ctx.fill();
+            drawWheel(165, 220, 27); drawWheel(535, 220, 27);
+        } else if (brandId === 'tesla') {
+            // 特斯拉Model Y - 流线型SUV，无格栅
+            ctx.fillStyle = mainColor;
+            ctx.beginPath();
+            ctx.moveTo(130, 215); ctx.lineTo(140, 178); ctx.lineTo(220, 160); ctx.lineTo(350, 138);
+            ctx.lineTo(570, 135); ctx.lineTo(640, 155); ctx.lineTo(690, 172); ctx.lineTo(700, 208);
+            ctx.lineTo(695, 222); ctx.lineTo(610, 222); ctx.lineTo(590, 198); ctx.lineTo(470, 198); ctx.lineTo(450, 222);
+            ctx.lineTo(210, 222); ctx.lineTo(190, 198); ctx.lineTo(150, 198); ctx.lineTo(130, 215);
+            ctx.closePath(); ctx.fill();
+            // 无格栅，流线型前脸
+            ctx.fillStyle = darkColor;
+            ctx.beginPath(); ctx.ellipse(688, 190, 10, 6, 0, 0, Math.PI*2); ctx.fill();
+            // 大灯（细长）
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.ellipse(660, 178, 16, 5, 0, 0, Math.PI*2); ctx.fill();
+            // 车窗
+            ctx.fillStyle = '#223344';
+            ctx.beginPath(); ctx.moveTo(360, 146); ctx.lineTo(560, 143); ctx.lineTo(625, 162); ctx.lineTo(615, 170); ctx.lineTo(350, 166); ctx.closePath(); ctx.fill();
+            drawWheel(170, 218, 27); drawWheel(530, 218, 27);
+        }
 
-        // 门把手
-        [[0.1, 0.72, 0.52], [0.1, 0.72, -0.52]].forEach(p => {
-            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.02), blackMat);
-            handle.position.set(...p); car.add(handle);
-        });
+        // 底部阴影
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath(); ctx.ellipse(400, 245, 300, 12, 0, 0, Math.PI*2); ctx.fill();
 
-        // 后视镜
-        [[0.45, 0.85, 0.58], [0.45, 0.85, -0.58]].forEach(p => {
-            const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.04), bodyMat);
-            mirror.position.set(...p); car.add(mirror);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.anisotropy = 16;
+        return texture;
+    }
+
+    // ========== 品牌展厅汽车模型（优先加载真实图片） ==========
+    function createBrandCar(brandId, bodyColor, accentColor) {
+        const car = new THREE.Group();
+        const textureLoader = new THREE.TextureLoader();
+
+        // 尝试加载真实图片
+        const imageMap = {
+            bmw: 'car-images/bmw-x5.png',
+            mercedes: 'car-images/mercedes-s.png',
+            audi: 'car-images/audi-a6.png',
+            toyota: 'car-images/toyota-prado.png',
+            byd: 'car-images/byd-han.png',
+            tesla: 'car-images/tesla-modely.png'
+        };
+        const imagePath = imageMap[brandId];
+
+        // 创建展示平面（先使用Canvas轮廓，图片加载成功后替换）
+        const canvasTexture = createCarSilhouette(brandId, bodyColor);
+        const planeGeo = new THREE.PlaneGeometry(3.5, 1.4);
+        const planeMat = new THREE.MeshBasicMaterial({
+            map: canvasTexture, transparent: true, side: THREE.DoubleSide
         });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.position.y = 0.85;
+        plane.rotation.x = -0.1;
+        car.add(plane);
+
+        // 尝试加载真实图片（png 优先，其次 jpg）
+        if (imagePath) {
+            const tryLoad = (ext) => {
+                return new Promise((resolve) => {
+                    textureLoader.load(
+                        imagePath.replace('.png', ext),
+                        (tex) => resolve(tex),
+                        undefined,
+                        () => resolve(null)
+                    );
+                });
+            };
+            Promise.resolve().then(() => tryLoad('.png')).then(tex => {
+                if (!tex) return tryLoad('.jpg');
+                return tex;
+            }).then(tex => {
+                if (tex) {
+                    planeMat.map = tex;
+                    planeMat.needsUpdate = true;
+                }
+            });
+        }
+
+        // 展台底座光环
+        const baseGeo = new THREE.CylinderGeometry(2.0, 2.2, 0.08, 32);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.3 });
+        const base = new THREE.Mesh(baseGeo, baseMat);
+        base.position.y = 0.04;
+        base.receiveShadow = true;
+        car.add(base);
 
         return car;
     }
