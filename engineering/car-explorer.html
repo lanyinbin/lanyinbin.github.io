@@ -714,6 +714,7 @@
     }
 
     function backToMenu() {
+        stopSpeech();
         currentMode = 'menu';
         document.getElementById('mainMenu').classList.remove('hidden');
         document.getElementById('headerBar').style.display = 'none';
@@ -1371,6 +1372,7 @@
     }
 
     function closeInfo() {
+        stopSpeech();
         document.getElementById('infoPanel').classList.remove('active');
         // 品牌模式下，关闭后回到品牌展厅全景
         if (currentMode === 'brand') {
@@ -1480,6 +1482,7 @@
     }
 
     function closeQuiz() {
+        stopSpeech();
         document.getElementById('quizPanel').classList.remove('active');
     }
 
@@ -1500,6 +1503,23 @@
             window.speechSynthesis.speak(utter);
         }
     }
+
+    function stopSpeech() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    }
+
+    // 页面隐藏/切换时停止语音
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopSpeech();
+    });
+
+    // 浏览器回退/前进时停止语音
+    window.addEventListener('popstate', stopSpeech);
+
+    // 页面关闭/刷新前停止语音
+    window.addEventListener('beforeunload', stopSpeech);
 
     // ========== Toast ==========
     function showToast(msg) {
