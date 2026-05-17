@@ -997,8 +997,9 @@ function createClouds() {
     const cloudsMaterial = new THREE.MeshPhongMaterial({
         map: cloudsMap,
         transparent: true,
-        opacity: 0.35,
-        depthWrite: false
+        opacity: 0.45,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
     });
 
     cloudsMesh = new THREE.Mesh(geometry, cloudsMaterial);
